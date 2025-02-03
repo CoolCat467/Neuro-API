@@ -393,7 +393,7 @@ def convert_parameterized_generic(generic: GenericAlias | T) -> T | type:
     ).startswith(
         "typing_extensions.NotRequired[",
     ):  # pragma: nocover
-        return generic.__args__[0]
+        return generic.__args__[0]  # type: ignore
     return generic
 
 
