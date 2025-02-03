@@ -1,0 +1,193 @@
+[build-system]
+requires = ["setuptools >= 64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuro_api"
+dynamic = ["version"]
+authors = [
+  { name="CoolCat467", email="CoolCat467@duck.com" },
+]
+description = "Neuro-API SDK for Python"
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {file = "LICENSE"}
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Games/Entertainment",
+    "Topic :: Games/Entertainment :: Board Games",
+    "Topic :: Games/Entertainment :: Turn Based Strategy",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries :: pygame",
+    "Operating System :: OS Independent",
+    "Framework :: Trio",
+    "Typing :: Typed",
+]
+keywords = [
+    "neuro-api", "sdk"
+]
+dependencies = [
+    "trio-websocket~=0.11.1",
+    "orjson>=3.10,<4",
+    "trio~=0.28.0",
+    "exceptiongroup>=1.2.2 ; python_full_version < '3.11'",
+    "libcomponent~=0.0.2",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "neuro_api.api.__version__"}
+
+[project.urls]
+"Source" = "https://github.com/CoolCat467/Neuro-API"
+"Bug Tracker" = "https://github.com/CoolCat467/Neuro-API/issues"
+
+[project.optional-dependencies]
+tests = [
+    "pytest>=5.0",
+    "pytest-cov>=6.0.0",
+    "pytest-trio>=0.8.0",
+    "coverage>=7.2.5",
+    "uv>=0.5.21",
+    "mypy>=1.14.1",
+]
+tools = [
+    'black>=24.10.0; implementation_name == "cpython"',
+    "ruff>=0.9.2",
+    "codespell>=2.3.0",
+]
+
+[tool.setuptools.package-data]
+azul = ["py.typed", "data/*", "lang/*", "fonts/*"]
+
+[tool.uv]
+package = true
+
+[tool.uv.sources]
+trio-websocket = { git = "https://github.com/python-trio/trio-websocket.git" }
+
+[tool.mypy]
+files = ["src/neuro_api/"]
+show_column_numbers = true
+show_error_codes = true
+show_traceback = true
+disallow_any_decorated = true
+disallow_any_unimported = true
+ignore_missing_imports = true
+local_partial_types = true
+no_implicit_optional = true
+strict = true
+warn_unreachable = true
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.pycln]
+all = true
+disable_all_dunder_policy = true
+
+[tool.black]
+line-length = 79
+
+[tool.ruff]
+line-length = 79
+fix = true
+
+include = ["*.py", "*.pyi", "**/pyproject.toml"]
+
+[tool.ruff.lint]
+select = [
+    "A",     # flake8-builtins
+    "ASYNC", # flake8-async
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "COM",   # flake8-commas
+    "D",     # pydocstyle
+    "E",     # Error
+    "EXE",   # flake8-executable
+    "F",     # pyflakes
+    "FA",    # flake8-future-annotations
+    "FLY",   # flynt
+    "FURB",  # refurb
+    "I",     # isort
+    "ICN",   # flake8-import-conventions
+    "N",     # pep8-naming
+    "PIE",   # flake8-pie
+    "PT",    # flake8-pytest-style
+    "PYI",   # flake8-pyi
+    "Q",     # flake8-quotes
+    "R",     # Refactor
+    "RET",   # flake8-return
+    "RUF",   # Ruff-specific rules
+    "S",     # flake8-bandit
+    "SIM",   # flake8-simplify
+    "SLOT",  # flake8-slots
+    "TCH",   # flake8-type-checking
+    "UP",    # pyupgrade
+    "W",     # Warning
+    "YTT",   # flake8-2020
+]
+extend-ignore = [
+    "D203",   # one-blank-line-before-class
+    "D204",   # one-blank-line-after-class
+    "D211",   # no-blank-line-before-class
+    "D213",   # multi-line-summary-second-line
+    "D417",   # undocumented-param "Missing argument descriptions"
+    "E501",   # line-too-long
+    "PYI041", # redundant-numeric-union
+    "S101",   # assert (use of assert for tests and type narrowing)
+    "SIM117", # multiple-with-statements
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "D100",  # undocumented-public-module
+    "D103",  # undocumented-public-function
+    "D107",  # undocumented-public-init
+]
+
+[tool.pytest.ini_options]
+addopts = "--cov-report=xml --cov-report=term-missing --cov=neuro_api"
+testpaths = [
+    "tests",
+]
+
+[tool.coverage.run]
+branch = true
+source_pkgs = ["neuro_api"]
+omit = [
+    "__init__.py",
+]
+parallel = true
+relative_files = true
+source = ["."]
+
+[tool.coverage.report]
+precision = 1
+skip_covered = true
+exclude_also = [
+    "pragma: no cover",
+    "abc.abstractmethod",
+    "if TYPE_CHECKING.*:",
+    "if _t.TYPE_CHECKING:",
+    "if t.TYPE_CHECKING:",
+    "@overload",
+    'class .*\bProtocol\b.*\):',
+    "raise NotImplementedError",
+]
+partial_branches = [
+    "pragma: no branch",
+    "if not TYPE_CHECKING:",
+    "if not _t.TYPE_CHECKING:",
+    "if not t.TYPE_CHECKING:",
+    "if .* or not TYPE_CHECKING:",
+    "if .* or not _t.TYPE_CHECKING:",
+    "if .* or not t.TYPE_CHECKING:",
+]

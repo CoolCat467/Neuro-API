@@ -1,0 +1,49 @@
+ci:
+  autofix_prs: true
+  autoupdate_schedule: quarterly
+  submodules: false
+  skip: [badgie]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-ast
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+      - id: check-case-conflict
+      - id: check-added-large-files
+      - id: sort-simple-yaml
+        files: .pre-commit-config.yaml
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 24.10.0
+    hooks:
+      - id: black
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.2
+    hooks:
+      - id: ruff
+        types: [file]
+        types_or: [python, pyi, toml]
+  - repo: https://github.com/CoolCat467/badgie
+    rev: v0.9.6
+    hooks:
+      - id: badgie
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli
+  - repo: https://github.com/crate-ci/typos
+    rev: dictgen-v0.3.1
+    hooks:
+      - id: typos
+  - repo: https://github.com/woodruffw/zizmor-pre-commit
+    rev: v1.2.1
+    hooks:
+      - id: zizmor
