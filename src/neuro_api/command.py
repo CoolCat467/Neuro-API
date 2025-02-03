@@ -28,10 +28,10 @@ __license__ = "GNU General Public License Version 3"
 import sys
 from types import GenericAlias
 from typing import (
+    TYPE_CHECKING,
     Any,
     Final,
     NamedTuple,
-    NotRequired,
     TypedDict,
     TypeVar,
     get_type_hints,
@@ -39,6 +39,9 @@ from typing import (
 )
 
 import orjson
+
+if TYPE_CHECKING:
+    from typing_extensions import NotRequired
 
 T = TypeVar("T")
 
