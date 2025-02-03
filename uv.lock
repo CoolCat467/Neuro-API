@@ -371,6 +371,7 @@ dependencies = [
     { name = "orjson" },
     { name = "trio" },
     { name = "trio-websocket" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -403,6 +404,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'tools'", specifier = ">=0.9.2" },
     { name = "trio", specifier = "~=0.28.0" },
     { name = "trio-websocket", git = "https://github.com/python-trio/trio-websocket.git" },
+    { name = "typing-extensions", specifier = ">=4.12.2" },
     { name = "uv", marker = "extra == 'tests'", specifier = ">=0.5.21" },
 ]
 
