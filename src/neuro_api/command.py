@@ -388,6 +388,12 @@ def convert_parameterized_generic(generic: GenericAlias | T) -> T | type:
     """Return origin type of aliases."""
     if isinstance(generic, GenericAlias):
         return generic.__origin__
+    if repr(generic).startswith("typing.NotRequired[") or repr(
+        generic,
+    ).startswith(
+        "typing_extensions.NotRequired[",
+    ):  # pragma: nocover
+        return generic.__args__[0]
     return generic
 
 
