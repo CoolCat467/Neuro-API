@@ -121,7 +121,7 @@ def check_invalid_keys_recursive(
     for key, value in sub_schema.items():
         if key in INVALID_SCHEMA_KEYS:
             invalid_keys.append(key)
-        elif isinstance(value, str | int | bool):
+        elif isinstance(value, (str, int, bool)):
             pass
         elif isinstance(value, dict):
             invalid_keys.extend(check_invalid_keys_recursive(value))
@@ -412,7 +412,10 @@ def check_typed_dict(data: dict[str, object], typed_dict: type[T]) -> T:
     optional = {
         k
         for k, v in full_annotations.items()
-        if repr(v).startswith("typing.NotRequired[")
+        if (
+            repr(v).startswith("typing.NotRequired[")
+            or repr(v).startswith("typing_extensions.NotRequired[")
+        )
     }
     required -= optional
 
