@@ -18,9 +18,6 @@ async def neuro_api() -> tuple[AbstractNeuroAPI, AsyncMock]:
         async def handle_action(self, action: NeuroAction) -> None:
             """Mock implementation for testing."""
 
-        async def handle_message_exception(self, exception: Exception) -> None:
-            raise exception
-
     websocket = AsyncMock()
     api = TestNeuroAPI("Test Game", websocket)
     return api, websocket
@@ -43,12 +40,12 @@ async def test_connection_property(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
     api, _ = neuro_api
-    api._connection = None
+    api.connect(None)
     with pytest.raises(RuntimeError):
         _ = api.connection
 
     api._connection = AsyncMock()
-    assert api.connection is not None
+    assert api.not_connected
 
 
 @pytest.mark.trio
@@ -103,7 +100,7 @@ async def test_register_actions(
 
     await api.register_actions([action])
 
-    assert "test_action" in api.currently_registered
+    assert "test_action" in api.get_registered()
     websocket.send_message.assert_awaited_once_with(
         command.actions_register_command("Test Game", [action]).decode(
             "utf-8",
@@ -121,7 +118,7 @@ async def test_unregister_actions(
 
     await api.unregister_actions(["test_action"])
 
-    assert "test_action" not in api.currently_registered
+    assert "test_action" not in api.get_registered()
 
 
 @pytest.mark.trio

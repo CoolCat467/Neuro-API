@@ -247,19 +247,20 @@ async def run() -> None:
                 neuro_data: str | None,
             ) -> tuple[bool, str | None]:
                 async with lock:
-                    if neuro_component.currently_registered:
-                        print(f"{to_neuro_action.name}")
+                    if neuro_component.get_registered():
+                        print(f"Got {to_neuro_action.name}")
                         nonlocal state
                         state = game.result(state, game_action)
-                        if neuro_component.currently_registered:
+                        if neuro_component.get_registered():
+                            print("unregistering")
                             await neuro_component.unregister_actions(
-                                list(neuro_component.currently_registered),
+                                list(neuro_component.get_registered()),
                             )
                         return (
                             True,
                             f"Played an {player} at row {game_action.row} column {game_action.col}",
                         )
-                    return False, "That move is not available at this time"
+                return False, "That move is not available at this time"
 
             return (to_neuro_action, handler)
 
@@ -269,14 +270,12 @@ async def run() -> None:
                     game_action_mapper(game_action)
                     for game_action in game.actions(state)
                 )
-                print(f"{neuro_component.currently_registered = }")
-                if neuro_component.currently_registered:
+                print(f"{neuro_component.get_registered() = }")
+                if neuro_component.get_registered():
                     await neuro_component.send_force_action(
                         "Neuro's Turn",
                         "It is your turn now. Please select a play to make on the tic tac toe board.",
-                        action_names=tuple(
-                            neuro_component.currently_registered,
-                        ),
+                        action_names=neuro_component.get_registered(),
                     )
 
                     while game.player(
@@ -289,7 +288,10 @@ async def run() -> None:
                 while True:
                     for idx, action in enumerate(actions):
                         print(f"{idx+1}: {action}")
-                    index = int(input("Your choice: "))
+                    try:
+                        index = int(input("Your choice: "))
+                    except ValueError:
+                        print("Bad choice try again\n")
                     if index < 1 or index > len(actions):
                         print("Bad choice try again\n")
                     else:

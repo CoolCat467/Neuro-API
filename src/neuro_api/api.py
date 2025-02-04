@@ -49,7 +49,7 @@ class NeuroAction(NamedTuple):
 class AbstractNeuroAPI(metaclass=ABCMeta):
     """Neuro API."""
 
-    # __slots__ = ("_connection", "currently_registered", "game_title")
+    # __slots__ = ("__connection", "__currently_registered", "game_title")
 
     def __init__(
         self,
@@ -58,10 +58,10 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
     ) -> None:
         """Initialize NeuroAPI."""
         self.game_title = game_title
-        self._connection = connection
+        self.__connection = connection
         # Keep track of currently registered actions to be able to handle
         # `actions/reregister_all` command.
-        self.currently_registered: dict[
+        self.__currently_registered: dict[
             str,
             tuple[str, dict[str, object] | None],
         ] = {}
@@ -69,24 +69,34 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
     @property
     def not_connected(self) -> bool:
         """Is stream None?."""
-        return self._connection is None
+        return self.__connection is None
 
     @property
     def connection(self) -> trio_websocket.WebSocketConnection:
         """Websocket connection or raise RuntimeError."""
-        if self._connection is None:
+        if self.__connection is None:
             raise RuntimeError("Websocket not connected!")
-        return self._connection
+        return self.__connection
 
     def connect(
         self,
         websocket: trio_websocket.WebSocketConnection | None,
     ) -> None:
         """Set internal websocket to given websocket or set to None."""
-        self._connection = websocket
+        self.__connection = websocket
+
+    def get_registered(self) -> tuple[str, ...]:
+        """Return all currently registered Neuro action names."""
+        return tuple(self.__currently_registered)
 
     async def send_command_data(self, data: bytes) -> None:
-        """Send command data over the websocket."""
+        """Send command data over the websocket.
+
+        Raises `ConnectionClosed` if websocket connection is closed, or
+        being closed.
+
+        Could raise `UnicodeDecodeError` if data is unable to be decoded.
+        """
         await self.connection.send_message(data.decode("utf-8"))
 
     async def send_startup_command(self) -> None:
@@ -98,6 +108,14 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         This message clears all previously registered actions for this game
         and does initial setup, and as such should be the very first message
         that you send.
+
+        Raises `ConnectionClosed` if websocket connection is closed, or
+        being closed.
+
+        Could raise `UnicodeDecodeError` if data is unable to be decoded,
+        but probably won't happen.
+
+        Raises `orjson.JSONEncodeError` if unable to encode json data.
         """
         await self.send_command_data(command.startup_command(self.game_title))
 
@@ -117,6 +135,14 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
             respond to the message directly, unless she is busy talking to
             someone else or to chat.
 
+        Raises `ConnectionClosed` if websocket connection is closed, or
+        being closed.
+
+        Could raise `UnicodeDecodeError` if data is unable to be decoded,
+        but probably won't happen.
+
+        Raises `orjson.JSONEncodeError` if unable to encode json data.
+
         """
         await self.send_command_data(
             command.context_command(self.game_title, message, silent),
@@ -131,13 +157,21 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
             A list of actions to be registered. If you try to register an
             action that is already registered, it will be ignored.
 
-        Raises ValueError if action name has invalid characters or bad
+        Raises `ValueError` if action name has invalid characters or bad
         schema key.
+
+        Raises `ConnectionClosed` if websocket connection is closed, or
+        being closed.
+
+        Could raise `UnicodeDecodeError` if data is unable to be decoded,
+        but probably won't happen.
+
+        Raises `orjson.JSONEncodeError` if unable to encode json data.
         """
         for action in actions:
             command.check_action(action)
 
-            self.currently_registered[action.name] = (
+            self.__currently_registered[action.name] = (
                 action.description,
                 action.schema,
             )
@@ -154,9 +188,17 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         action_names:
             The names of the actions to unregister. If you try to unregister
             an action that isn't registered, there will be no problem.
+
+        Raises `ConnectionClosed` if websocket connection is closed, or
+        being closed.
+
+        Could raise `UnicodeDecodeError` if data is unable to be decoded,
+        but probably won't happen.
+
+        Raises `orjson.JSONEncodeError` if unable to encode json data.
         """
         for action_name in action_names:
-            self.currently_registered.pop(action_name, None)
+            self.__currently_registered.pop(action_name, None)
         await self.send_command_data(
             command.actions_unregister_command(self.game_title, action_names),
         )
@@ -198,11 +240,19 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         - `action_names`:
             The names of the actions that Neuro should choose from.
 
-        Raises ValueError if any action name is not currently registered.
+        Raises `ValueError` if any action name is not currently registered.
+
+        Raises `ConnectionClosed` if websocket connection is closed, or
+        being closed.
+
+        Could raise `UnicodeDecodeError` if data is unable to be decoded,
+        but probably won't happen.
+
+        Raises `orjson.JSONEncodeError` if unable to encode json data.
 
         """
         for name in action_names:
-            if name not in self.currently_registered:
+            if name not in self.get_registered():
                 raise ValueError(f"{name!r} is not currently registered.")
         await self.send_command_data(
             command.actions_force_command(
@@ -253,6 +303,14 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         it to be retried, you should set `success` to `true` and provide an
         error message in the `message` field.
 
+        Raises `ConnectionClosed` if websocket connection is closed, or
+        being closed.
+
+        Could raise `UnicodeDecodeError` if data is unable to be decoded,
+        but probably won't happen.
+
+        Raises `orjson.JSONEncodeError` if unable to encode json data.
+
         """
         await self.send_command_data(
             command.actions_result_command(
@@ -275,6 +333,14 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         sent, Neuro will close the game herself by terminating the
         process, so to reiterate you must definitely ensure that
         progress has already been saved.
+
+        Raises `ConnectionClosed` if websocket connection is closed, or
+        being closed.
+
+        Could raise `UnicodeDecodeError` if data is unable to be decoded,
+        but probably won't happen.
+
+        Raises `orjson.JSONEncodeError` if unable to encode json data.
         """
         await self.send_command_data(
             command.shutdown_ready_command(self.game_title),
@@ -282,23 +348,22 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
 
     async def read_raw_message(
         self,
-    ) -> tuple[str | None, dict[str, object] | None]:
+    ) -> tuple[str, dict[str, object] | None]:
         """Return command name and associated data from Neuro.
 
-        Will not return until message read.
-
-        Returns command None on exception.
+        Will not return until message read from websocket.
 
         Raises `orjson.JSONDecodeError` on invalid message.
 
-        Raises AssertionError if received types in json message are not
+        Raises `trio_websocket.ConnectionClosed` on websocket connection error.
+
+        Raises `trio.BrokenResourceError` if something has gone wrong,
+        and internal memory channel is broken. Probably won't happen.
+
+        Raises `AssertionError` if received types in json message are not
         expected types.
         """
-        try:
-            message = orjson.loads(await self.connection.get_message())
-        except Exception as exc:
-            await self.handle_message_exception(exc)
-            return None, None
+        message = orjson.loads(await self.connection.get_message())
         command = message["command"]
         assert isinstance(command, str)
         raw_data = message.get("data")
@@ -309,10 +374,6 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
     @abstractmethod
     async def handle_action(self, action: NeuroAction) -> None:
         """Handle an Action from Neuro."""
-
-    @abstractmethod
-    async def handle_message_exception(self, exception: Exception) -> None:
-        """Handle read message exception."""
 
     async def handle_graceful_shutdown_request(
         self,
@@ -387,7 +448,7 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         await trio.lowlevel.checkpoint()
 
     async def read_message(self) -> None:
-        """Read message from neuro.
+        """Read message from Neuro.
 
         Automatically handles `actions/reregister_all` commands.
 
@@ -402,14 +463,9 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         missing keys in action command data.
         Raises TypeError on action command key type mismatch.
 
-        Raises ValueError if you manually modified
-        `currently_registered` with invalid action types in the event of
-        a regregister event.
+        Does not catch any exceptions `read_raw_message` raises.
         """
         command_type, data = await self.read_raw_message()
-        if command_type is None:
-            # Exception happened
-            return
         if command_type == "action":
             assert data is not None
             action_data = command.check_typed_dict(
@@ -425,14 +481,14 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
             )
         elif command_type == "actions/reregister_all":
             # Neuro crashed, re-register all actions.
-            if self.currently_registered:
+            if self.get_registered():
                 await self.register_actions(
                     [
                         command.Action(name, desc, schema)
                         for name, (
                             desc,
                             schema,
-                        ) in self.currently_registered.items()
+                        ) in self.__currently_registered.items()
                     ],
                 )
         elif command_type == "shutdown/graceful":

@@ -83,6 +83,11 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
 
         action_handlers should be an iterable of (Action,
         NeuroAction event handler function).
+
+        Raises AttributeError if this component is not bound to a manager.
+
+        Raises ValueError if action name has invalid characters or bad
+        schema key.
         """
         handlers = tuple(action_handlers)
         self.register_handlers(
@@ -171,15 +176,27 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
             ),
         )
 
-    async def handle_message_exception(self, exception: Exception) -> None:
-        """Handle a read message exception."""
-        await self.stop()
-        await self.raise_event(
-            Event(
-                "read_message_exception",
-                exception,
-            ),
-        )
+    async def read_message(self) -> None:
+        """Read message from Neuro.
+
+        Automatically handles `actions/reregister_all` commands.
+
+        Calls handle_graceful_shutdown_request and handle_immediate_shutdown
+        for graceful and immediate shutdown requests respectively.
+
+        Calls handle_action for `action` commands.
+
+        Calls handle_unknown_command for any other command.
+
+        Raises ValueError if extra keys in action command data or
+        missing keys in action command data.
+        Raises TypeError on action command key type mismatch.
+        """
+        try:
+            await super().read_message()
+        except trio_websocket.ConnectionClosed:
+            # Stop websocket if connection closed.
+            await self.stop()
 
     async def websocket_connect_failed(self) -> None:  # pragma: nocover
         """Handle when websocket connect has handshake failure.
