@@ -1,0 +1,313 @@
+"""Tic Tac Toe - Example game code."""
+
+# Programmed by CoolCat467
+
+from __future__ import annotations
+
+# Tic Tac Toe - Example game code.
+# Copyright (C) 2023-2025  CoolCat467
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+__title__ = "Tic Tac Toe"
+__author__ = "CoolCat467"
+__version__ = "0.0.0"
+__license__ = "GNU General Public License Version 3"
+
+
+import sys
+import traceback
+from typing import TYPE_CHECKING, NamedTuple, cast
+
+import trio
+from libcomponent.component import Event, ExternalRaiseManager
+
+from neuro_api.command import Action
+from neuro_api.event import NeuroAPIComponent
+
+if sys.version_info < (3, 11):
+    from exceptiongroup import ExceptionGroup
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+from enum import IntEnum, auto
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+
+class Player(IntEnum):
+    """Enum for player status."""
+
+    __slots__ = ()
+    MIN = auto()
+    MAX = auto()
+    CHANCE = auto()
+
+
+GameValue = tuple[
+    int,
+    int,
+    int,
+    int,
+    int,
+    int,
+    int,
+    int,
+    int,
+]
+
+
+class State(NamedTuple):
+    """State of tic tac toe game.
+
+    -1 = O
+    0 = _
+    1 = X
+    """
+
+    value: GameValue
+
+    def __repr__(self) -> str:
+        """Return pretty representation of game state."""
+        lines = []
+        for ridx in range(3):
+            lines.append(
+                ", ".join(str(v).rjust(2) for v in self.get_row(ridx)),
+            )
+        val = "\n" + "\n".join(f"  {v}," for v in lines) + "\n"
+        return f"{self.__class__.__name__}(({val}))"
+
+    def __str__(self) -> str:
+        """Return string representation of game state."""
+        map_ = {-1: "O", 0: "_", 1: "X"}
+        lines = []
+        for ridx in range(3):
+            lines.append(" ".join(map_[v] for v in self.get_row(ridx)))
+        val = "\n" + "\n".join(f"  {v}" for v in lines) + "\n"
+        return f"{self.__class__.__name__}({val})"
+
+    def get_item(self, row: int, col: int) -> int:
+        """Get item at (row, col)."""
+        return self.value[row * 3 + col]
+
+    def get_row(self, row: int) -> tuple[int, int, int]:
+        """Get all items in given row."""
+        v = self.value[row * 3 : (row + 1) * 3]
+        assert len(v) == 3
+        return v
+
+    def get_col(self, col: int) -> tuple[int, int, int]:
+        """Get all items in given column."""
+        v = self.value[col:9:3]
+        assert len(v) == 3
+        return v
+
+    def get_diag(self, right: int) -> tuple[int, int, int]:
+        """Get all items in given diagonal.
+
+        Right = top right to bottom left
+        """
+        start = 2 if right else 0
+        delta = 2 if right else 4
+        end = 8 if right else 9
+        v = self.value[start:end:delta]
+        assert len(v) == 3
+        return v
+
+
+class GameAction(NamedTuple):
+    """Tic Tac Toe Game GameAction."""
+
+    row: int
+    col: int
+    player: int
+
+
+class Game:
+    """Tic Tac Toe Minimax.
+
+    Uses convention that X plays first.
+    """
+
+    __slots__ = ()
+
+    @staticmethod
+    def value(state: State) -> int:
+        """Return the value of a given game state."""
+        for func_id, function in enumerate(
+            (state.get_row, state.get_col, state.get_diag),
+        ):
+            stop = 2 if func_id == 2 else 3
+            for idx in range(stop):
+                sum_ = sum(function(idx))
+                if sum_ == 3:
+                    return 1
+                if sum_ == -3:
+                    return -1
+        return 0
+
+    @staticmethod
+    def terminal(state: State) -> bool:
+        """Return if given game state is terminal."""
+        return 0 not in state.value
+
+    @staticmethod
+    def player(state: State) -> Player:
+        """Return player status given the state of the game.
+
+        Must return either Player.MIN or Player.MAX
+        """
+        x_count = state.value.count(1)
+        o_count = state.value.count(-1)
+        if x_count > o_count:
+            return Player.MIN  # O
+        # X always plays first
+        return Player.MAX  # X
+
+    @classmethod
+    def actions(cls, state: State) -> Iterable[GameAction]:
+        """Return a collection of all possible actions in a given game state."""
+        player = -1 if cls.player(state) == Player.MIN else 1
+        for index in range(9):
+            row, col = divmod(index, 3)
+            if state.value[index] == 0:
+                yield GameAction(row, col, player)
+
+    @staticmethod
+    def result(state: State, action: GameAction) -> State:
+        """Return new game state after performing action on given state."""
+        index = action.row * 3 + action.col
+        mutable = list(state.value)
+        mutable[index] = action.player
+        return State(
+            cast(
+                tuple[int, int, int, int, int, int, int, int, int],
+                tuple(mutable),
+            ),
+        )
+
+
+async def run() -> None:
+    """Run test of module."""
+    url = "ws://localhost:8000"
+    async with trio.open_nursery(strict_exception_groups=True) as nursery:
+        manager = ExternalRaiseManager("name", nursery)
+
+        neuro_component = NeuroAPIComponent("neuro_api", "Tic Tac Toe")
+        manager.add_component(neuro_component)
+
+        neuro_component.register_handler(
+            "connect",
+            neuro_component.handle_connect,
+        )
+
+        await manager.raise_event(Event("connect", url))
+
+        await trio.sleep(0.5)
+
+        if neuro_component.not_connected:
+            print("Neuro not connected, stopping.")
+            return
+
+        await neuro_component.send_startup_command()
+
+        await neuro_component.send_context(
+            """You are playing a tic tac toe game.""",
+        )
+        print("click")
+
+        game = Game()
+        state = State((0, 0, 0, 0, 0, 0, 0, 0, 0))
+
+        map_ = {-1: "O", 0: "_", 1: "X"}
+        lock = trio.Lock()
+
+        def game_action_mapper(game_action: GameAction):
+            player = map_[game_action.player]
+            to_neuro_action = Action(
+                f"play_{game_action.row}_{game_action.col}",
+                f"Plays an {player} at row {game_action.row} column {game_action.col}",
+            )
+
+            async def handler(
+                neuro_data: str | None,
+            ) -> tuple[bool, str | None]:
+                async with lock:
+                    if neuro_component.currently_registered:
+                        print(f"{to_neuro_action.name}")
+                        nonlocal state
+                        state = game.result(state, game_action)
+                        if neuro_component.currently_registered:
+                            await neuro_component.unregister_actions(
+                                list(neuro_component.currently_registered),
+                            )
+                        return (
+                            True,
+                            f"Played an {player} at row {game_action.row} column {game_action.col}",
+                        )
+                    return False, "That move is not available at this time"
+
+            return (to_neuro_action, handler)
+
+        while not game.terminal(state):
+            if game.player(state) == Player.MAX:
+                await neuro_component.register_neuro_actions(
+                    game_action_mapper(game_action)
+                    for game_action in game.actions(state)
+                )
+                print(f"{neuro_component.currently_registered = }")
+                if neuro_component.currently_registered:
+                    await neuro_component.send_force_action(
+                        "Neuro's Turn",
+                        "It is your turn now. Please select a play to make on the tic tac toe board.",
+                        action_names=tuple(
+                            neuro_component.currently_registered,
+                        ),
+                    )
+
+                    while game.player(
+                        state,
+                    ) == Player.MAX and not game.terminal(state):
+                        print("waiting for neuro")
+                        await trio.sleep(0.1)
+            else:
+                actions = tuple(game.actions(state))
+                while True:
+                    for idx, action in enumerate(actions):
+                        print(f"{idx+1}: {action}")
+                    index = int(input("Your choice: "))
+                    if index < 1 or index > len(actions):
+                        print("Bad choice try again\n")
+                    else:
+                        break
+                game_action = actions[index - 1]
+                state = game.result(state, game_action)
+                player = map_[game_action.player]
+                await neuro_component.send_context(
+                    f"Opponent played an {player} at row {game_action.row} column {game_action.col}\n"
+                    "Current game board: {state}",
+                )
+        print(f"{map_[game.value(state)]} wins!")
+        await neuro_component.stop()
+
+
+if __name__ == "__main__":
+    print(f"{__title__}\nProgrammed by {__author__}.\n")
+    try:
+        trio.run(run)
+    except ExceptionGroup as exc:
+        traceback.print_exception(exc)

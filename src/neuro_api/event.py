@@ -171,6 +171,16 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
             ),
         )
 
+    async def handle_message_exception(self, exception: Exception) -> None:
+        """Handle a read message exception."""
+        await self.stop()
+        await self.raise_event(
+            Event(
+                "read_message_exception",
+                exception,
+            ),
+        )
+
     async def websocket_connect_failed(self) -> None:  # pragma: nocover
         """Handle when websocket connect has handshake failure.
 

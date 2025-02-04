@@ -89,7 +89,6 @@ async def run() -> None:
 
 
 if __name__ == "__main__":
-    _exception: str | None = None
     try:
         trio.run(run)
     except ExceptionGroup as exc:

@@ -18,6 +18,9 @@ async def neuro_api() -> tuple[AbstractNeuroAPI, AsyncMock]:
         async def handle_action(self, action: NeuroAction) -> None:
             """Mock implementation for testing."""
 
+        async def handle_message_exception(self, exception: Exception) -> None:
+            raise exception
+
     websocket = AsyncMock()
     api = TestNeuroAPI("Test Game", websocket)
     return api, websocket

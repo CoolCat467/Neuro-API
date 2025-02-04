@@ -280,17 +280,25 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
             command.shutdown_ready_command(self.game_title),
         )
 
-    async def read_raw_message(self) -> tuple[str, dict[str, object] | None]:
+    async def read_raw_message(
+        self,
+    ) -> tuple[str | None, dict[str, object] | None]:
         """Return command name and associated data from Neuro.
 
         Will not return until message read.
+
+        Returns command None on exception.
 
         Raises `orjson.JSONDecodeError` on invalid message.
 
         Raises AssertionError if received types in json message are not
         expected types.
         """
-        message = orjson.loads(await self.connection.get_message())
+        try:
+            message = orjson.loads(await self.connection.get_message())
+        except Exception as exc:
+            await self.handle_message_exception(exc)
+            return None, None
         command = message["command"]
         assert isinstance(command, str)
         raw_data = message.get("data")
@@ -301,6 +309,10 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
     @abstractmethod
     async def handle_action(self, action: NeuroAction) -> None:
         """Handle an Action from Neuro."""
+
+    @abstractmethod
+    async def handle_message_exception(self, exception: Exception) -> None:
+        """Handle read message exception."""
 
     async def handle_graceful_shutdown_request(
         self,
@@ -395,6 +407,9 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         a regregister event.
         """
         command_type, data = await self.read_raw_message()
+        if command_type is None:
+            # Exception happened
+            return
         if command_type == "action":
             assert data is not None
             action_data = command.check_typed_dict(
@@ -408,20 +423,18 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
                     action_data.get("data"),
                 ),
             )
-        elif (
-            command_type == "actions/reregister_all"
-            and self.currently_registered
-        ):
+        elif command_type == "actions/reregister_all":
             # Neuro crashed, re-register all actions.
-            await self.register_actions(
-                [
-                    command.Action(name, desc, schema)
-                    for name, (
-                        desc,
-                        schema,
-                    ) in self.currently_registered.items()
-                ],
-            )
+            if self.currently_registered:
+                await self.register_actions(
+                    [
+                        command.Action(name, desc, schema)
+                        for name, (
+                            desc,
+                            schema,
+                        ) in self.currently_registered.items()
+                    ],
+                )
         elif command_type == "shutdown/graceful":
             # If wants_shutdown is True, save and return to title
             # whenever next possible.
