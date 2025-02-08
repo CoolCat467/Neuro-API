@@ -163,6 +163,9 @@ class Game:
     @staticmethod
     def terminal(state: State) -> bool:
         """Return if given game state is terminal."""
+        value = Game.value(state)
+        if value in {1, -1}:
+            return True
         return 0 not in state.value
 
     @staticmethod
@@ -201,40 +204,67 @@ class Game:
         )
 
 
+class TicTacToeNeuroComponent(NeuroAPIComponent):
+    """Tic Tac Toe game Neuro component."""
+
+    __slots__ = ("wait_connect_event",)
+
+    def __init__(self, component_name: str) -> None:
+        """Initialize Tic Tac Toe Neuro component."""
+        super().__init__(component_name, "Tic Tac Toe")
+        self.wait_connect_event = trio.Event()
+
+    def bind_handlers(self) -> None:
+        """Register event handlers."""
+        self.register_handler("connect", self.handle_connect)
+
+    def websocket_connect_failed(self) -> None:
+        """Handle websocket connection failure."""
+        self.wait_connect_event.set()
+
+        # Do default print message
+        super().websocket_connect_failed()
+
+    async def websocket_connect_successful(self) -> None:
+        """Handle websocket connection success."""
+        self.wait_connect_event.set()
+
+        await self.send_startup_command()
+
+        await self.send_context(
+            """You are playing a tic tac toe game.""",
+        )
+
+        # Do default print message
+        await super().websocket_connect_successful()
+
+    async def wait_for_websocket(self) -> None:
+        """Blocking until websocket connection trial ends."""
+        await self.wait_connect_event.wait()
+
+
 async def run() -> None:
     """Run test of module."""
     url = "ws://localhost:8000"
     async with trio.open_nursery(strict_exception_groups=True) as nursery:
         manager = ExternalRaiseManager("name", nursery)
 
-        neuro_component = NeuroAPIComponent("neuro_api", "Tic Tac Toe")
-        manager.add_component(neuro_component)
-
-        neuro_component.register_handler(
-            "connect",
-            neuro_component.handle_connect,
-        )
+        tic_tac_toe = TicTacToeNeuroComponent("neuro_api")
+        manager.add_component(tic_tac_toe)
 
         await manager.raise_event(Event("connect", url))
 
-        await trio.sleep(0.5)
+        await tic_tac_toe.wait_for_websocket()
 
-        if neuro_component.not_connected:
+        if tic_tac_toe.not_connected:
             print("Neuro not connected, stopping.")
             return
-
-        await neuro_component.send_startup_command()
-
-        await neuro_component.send_context(
-            """You are playing a tic tac toe game.""",
-        )
-        print("click")
 
         game = Game()
         state = State((0, 0, 0, 0, 0, 0, 0, 0, 0))
 
-        map_ = {-1: "O", 0: "_", 1: "X"}
-        lock = trio.Lock()
+        map_ = {-1: "O", 0: "No one (tie)", 1: "X"}
+        neuro_played = trio.Event()
 
         def game_action_mapper(game_action: GameAction):
             player = map_[game_action.player]
@@ -246,46 +276,40 @@ async def run() -> None:
             async def handler(
                 neuro_data: str | None,
             ) -> tuple[bool, str | None]:
-                async with lock:
-                    if neuro_component.get_registered():
-                        print(f"Got {to_neuro_action.name}")
-                        nonlocal state
-                        state = game.result(state, game_action)
-                        if neuro_component.get_registered():
-                            print("unregistering")
-                            await neuro_component.unregister_actions(
-                                list(neuro_component.get_registered()),
-                            )
-                        return (
-                            True,
-                            f"Played an {player} at row {game_action.row} column {game_action.col}",
-                        )
-                return False, "That move is not available at this time"
+                print(f"Got {to_neuro_action.name}")
+                nonlocal state
+                state = game.result(state, game_action)
+                neuro_played.set()
+                return (
+                    True,
+                    f"Played an {player} at row {game_action.row} column {game_action.col}",
+                )
 
             return (to_neuro_action, handler)
 
         while not game.terminal(state):
             if game.player(state) == Player.MAX:
-                await neuro_component.register_neuro_actions(
-                    game_action_mapper(game_action)
-                    for game_action in game.actions(state)
+                print(str(state))
+                actions_group = (
+                    await tic_tac_toe.register_temporary_actions_group(
+                        game_action_mapper(game_action)
+                        for game_action in game.actions(state)
+                    )
                 )
-                print(f"{neuro_component.get_registered() = }")
-                if neuro_component.get_registered():
-                    await neuro_component.send_force_action(
+                if actions_group:
+                    await tic_tac_toe.send_force_action(
                         "Neuro's Turn",
                         "It is your turn now. Please select a play to make on the tic tac toe board.",
-                        action_names=neuro_component.get_registered(),
+                        actions_group,
                     )
 
-                    while game.player(
-                        state,
-                    ) == Player.MAX and not game.terminal(state):
-                        print("waiting for neuro")
-                        await trio.sleep(0.1)
+                    print("\nWaiting for Neuro to make a move...")
+                    await neuro_played.wait()
+                    neuro_played = trio.Event()
             else:
                 actions = tuple(game.actions(state))
                 while True:
+                    print(str(state))
                     for idx, action in enumerate(actions):
                         print(f"{idx+1}: {action}")
                     try:
@@ -299,12 +323,16 @@ async def run() -> None:
                 game_action = actions[index - 1]
                 state = game.result(state, game_action)
                 player = map_[game_action.player]
-                await neuro_component.send_context(
+                await tic_tac_toe.send_context(
                     f"Opponent played an {player} at row {game_action.row} column {game_action.col}\n"
-                    "Current game board: {state}",
+                    f"Current game board: {state}",
                 )
-        print(f"{map_[game.value(state)]} wins!")
-        await neuro_component.stop()
+        print(str(state))
+        value = game.value(state)
+        win_message = f"{map_[value]} wins!"
+        print(win_message)
+        await tic_tac_toe.send_context(win_message, silent=False)
+        await tic_tac_toe.stop()
 
 
 if __name__ == "__main__":

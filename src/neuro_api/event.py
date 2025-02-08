@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING
 
 import trio
 import trio_websocket
+from exceptiongroup import catch
 from libcomponent.component import Component, Event
 
 from neuro_api.api import AbstractNeuroAPI, NeuroAction
@@ -58,14 +59,14 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
 
     def _send_result_wrapper(
         self,
-        handler: Callable[[str | None], Awaitable[tuple[bool, str | None]]],
+        handler: Callable[[NeuroAction], Awaitable[tuple[bool, str | None]]],
     ) -> Callable[[Event[NeuroAction]], Awaitable[None]]:
         """Return wrapper to handle neuro action event."""
 
         async def wrapper(event: Event[NeuroAction]) -> None:
             """Send action result with return value from handler."""
             neuro_action = event.data
-            success, message = await handler(neuro_action.data)
+            success, message = await handler(neuro_action)
             await self.send_action_result(neuro_action.id_, success, message)
 
         return wrapper
@@ -100,7 +101,7 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
         action_handlers: Iterable[
             tuple[
                 Action,
-                Callable[[str | None], Awaitable[tuple[bool, str | None]]],
+                Callable[[NeuroAction], Awaitable[tuple[bool, str | None]]],
             ],
         ],
     ) -> None:
@@ -109,7 +110,7 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
         action_handlers should be an iterable of Action and
         callback function pairs.
 
-        Callback functions accept str | None and return if action is successful
+        Callback functions accept `NeuroAction` and return if action is successful
         and optional associated small context message if successful.
         If unsuccessful, 2nd value must be an error message.
         """
@@ -118,12 +119,65 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
             for action, handler in action_handlers
         )
 
+    async def register_temporary_actions_group(
+        self,
+        grouped_action_handlers: Iterable[
+            tuple[
+                Action,
+                Callable[[NeuroAction], Awaitable[tuple[bool, str | None]]],
+            ],
+        ],
+    ) -> tuple[str, ...]:
+        """Register a group of temporary Neuro Actions and associated handler functions.
+
+        action_handlers should be an iterable of Action and
+        callback function pairs.
+
+        Callback functions accept `NeuroAction` and return if action is successful
+        and optional associated small context message if successful.
+        If unsuccessful, 2nd value must be an error message.
+
+        If any handler is successful, all actions in this group will be
+        unregistered.
+
+        Returns a tuple of all the names of all of the actions in this group
+        for use with `send_force_action`.
+        """
+        group = tuple(grouped_action_handlers)
+        group_action_names = [action.name for action, _handler in group]
+
+        def unregister_wrapper(
+            handler: Callable[
+                [NeuroAction],
+                Awaitable[tuple[bool, str | None]],
+            ],
+        ) -> Callable[[NeuroAction], Awaitable[tuple[bool, str | None]]]:
+            """Call handler, then unregisters actions group before passing on result."""
+
+            async def wrapper(
+                neuro_action: NeuroAction,
+            ) -> tuple[bool, str | None]:
+                success, message = await handler(neuro_action)
+                if success:
+                    await self.unregister_actions(group_action_names)
+                    for action_name in group_action_names:
+                        self.unregister_handler_type(f"neuro_{action_name}")
+                return success, message
+
+            return wrapper
+
+        await self.register_neuro_actions(
+            (action, unregister_wrapper(handler)) for action, handler in group
+        )
+
+        return tuple(group_action_names)
+
     async def register_temporary_actions(
         self,
         action_handlers: Iterable[
             tuple[
                 Action,
-                Callable[[str | None], Awaitable[tuple[bool, str | None]]],
+                Callable[[NeuroAction], Awaitable[tuple[bool, str | None]]],
             ],
         ],
     ) -> None:
@@ -132,7 +186,7 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
         action_handlers should be an iterable of Action and
         callback function pairs.
 
-        Callback functions accept str | None and return if action is successful
+        Callback functions accept `NeuroAction` and return if action is successful
         and optional associated small context message if successful.
         If unsuccessful, 2nd value must be an error message.
 
@@ -140,25 +194,26 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
         """
 
         def unregister_wrapper(
-            action_name: str,
             handler: Callable[
-                [str | None],
+                [NeuroAction],
                 Awaitable[tuple[bool, str | None]],
             ],
-        ) -> Callable[[str | None], Awaitable[tuple[bool, str | None]]]:
-            """Return wrapper function that calls handler, then unregisters action before passing on result."""
+        ) -> Callable[[NeuroAction], Awaitable[tuple[bool, str | None]]]:
+            """Call handler, then unregisters action before passing on result."""
 
-            async def wrapper(message: str | None) -> tuple[bool, str | None]:
-                success, message = await handler(message)
+            async def wrapper(
+                neuro_action: NeuroAction,
+            ) -> tuple[bool, str | None]:
+                success, message = await handler(neuro_action)
                 if success:
-                    await self.unregister_actions([action_name])
-                    self.unregister_handler_type(f"neuro_{action_name}")
+                    await self.unregister_actions([neuro_action.name])
+                    self.unregister_handler_type(f"neuro_{neuro_action.name}")
                 return success, message
 
             return wrapper
 
         await self.register_neuro_actions(
-            (action, unregister_wrapper(action.name, handler))
+            (action, unregister_wrapper(handler))
             for action, handler in action_handlers
         )
 
@@ -198,13 +253,12 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
             # Stop websocket if connection closed.
             await self.stop()
 
-    async def websocket_connect_failed(self) -> None:  # pragma: nocover
+    def websocket_connect_failed(self) -> None:  # pragma: nocover
         """Handle when websocket connect has handshake failure.
 
         Default just prints and error message
         """
         print("Failed to connect to websocket.")
-        await trio.lowlevel.checkpoint()
 
     async def websocket_connect_successful(self) -> None:
         """Handle when websocket connect is successful.
@@ -217,7 +271,11 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
     async def handle_connect(self, event: Event[str]) -> None:
         """Handle websocket connect event. Does not stop unless you call `stop` function."""
         url = event.data
-        try:
+
+        def handle_handshake_error(exc: trio_websocket.HandshakeError):
+            self.websocket_connect_failed()
+
+        with catch({trio_websocket.HandshakeError: handle_handshake_error}):
             async with trio_websocket.open_websocket_url(url) as websocket:
                 self.connect(websocket)
                 await self.websocket_connect_successful()
@@ -226,8 +284,6 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
                         await self.read_message()
                 finally:
                     self.connect(None)
-        except trio_websocket.HandshakeError:  # pragma: nocover
-            await self.websocket_connect_failed()
 
     async def stop(self, code: int = 1000, reason: str | None = None) -> None:
         """Close websocket and trigger not connected."""

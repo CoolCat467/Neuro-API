@@ -35,6 +35,8 @@ import trio
 from neuro_api import command
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     import trio_websocket
 
 
@@ -179,7 +181,7 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
             command.actions_register_command(self.game_title, actions),
         )
 
-    async def unregister_actions(self, action_names: list[str]) -> None:
+    async def unregister_actions(self, action_names: Sequence[str]) -> None:
         """Unregister actions with Neuro.
 
         This unregisters one or more actions, preventing Neuro from
@@ -207,7 +209,7 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         self,
         state: str,
         query: str,
-        action_names: list[str],
+        action_names: Sequence[str],
         ephemeral_context: bool = False,
     ) -> None:
         """Send force action start to Neuro.

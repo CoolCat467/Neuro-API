@@ -28,6 +28,7 @@ __license__ = "GNU General Public License Version 3"
 import sys
 from types import GenericAlias
 from typing import (
+    TYPE_CHECKING,
     Any,
     Final,
     NamedTuple,
@@ -38,6 +39,9 @@ from typing import (
 
 import orjson
 from typing_extensions import NotRequired, is_typeddict
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 T = TypeVar("T")
 
@@ -235,7 +239,7 @@ def actions_register_command(
 
 def actions_unregister_command(
     game: str,
-    action_names: list[str],
+    action_names: Sequence[str],
 ) -> bytes:
     """Return formatted action/unregister command.
 
@@ -250,7 +254,7 @@ def actions_unregister_command(
     return format_command(
         "actions/unregister",
         game,
-        {"action_names": action_names},
+        {"action_names": list(action_names)},
     )
 
 
@@ -258,7 +262,7 @@ def actions_force_command(
     game: str,
     state: str,
     query: str,
-    action_names: list[str],
+    action_names: Sequence[str],
     ephemeral_context: bool = False,
 ) -> bytes:
     """Return formatted actions/force command.
@@ -296,7 +300,7 @@ def actions_force_command(
     payload: dict[str, object] = {
         "state": state,
         "query": query,
-        "action_names": action_names,
+        "action_names": list(action_names),
     }
     if ephemeral_context:
         payload["ephemeral_context"] = True
