@@ -366,7 +366,7 @@ wheels = [
 name = "neuro-api"
 source = { editable = "." }
 dependencies = [
-    { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
+    { name = "exceptiongroup" },
     { name = "libcomponent" },
     { name = "orjson" },
     { name = "trio" },
@@ -394,7 +394,7 @@ requires-dist = [
     { name = "black", marker = "implementation_name == 'cpython' and extra == 'tools'", specifier = ">=24.10.0" },
     { name = "codespell", marker = "extra == 'tools'", specifier = ">=2.3.0" },
     { name = "coverage", marker = "extra == 'tests'", specifier = ">=7.2.5" },
-    { name = "exceptiongroup", marker = "python_full_version < '3.11'", specifier = ">=1.2.2" },
+    { name = "exceptiongroup", specifier = ">=1.2.2" },
     { name = "libcomponent", specifier = "~=0.0.2" },
     { name = "mypy", marker = "extra == 'tests'", specifier = ">=1.14.1" },
     { name = "orjson", specifier = ">=3.10,<4" },
