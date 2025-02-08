@@ -72,7 +72,7 @@ async def test_handle_action(neuro_api_component: NeuroAPIComponent) -> None:
     await neuro_api_component.handle_action(neuro_action)
 
     # Check if the handler was called
-    handler.assert_awaited_once_with("jerald data")
+    handler.assert_awaited_once_with(neuro_action)
 
 
 @pytest.mark.trio
@@ -110,7 +110,7 @@ async def test_register_temporary_actions(
     await neuro_api_component.handle_action(neuro_action)
 
     # Check if the handler was called and the action was unregistered
-    handler.assert_awaited_once_with("jerald")
+    handler.assert_awaited_once_with(neuro_action)
     assert not neuro_api_component.has_handler("neuro_temp_action")
 
 
@@ -132,7 +132,7 @@ async def test_register_temporary_actions_unsuccessful_remains(
     await neuro_api_component.handle_action(neuro_action)
 
     # Check if the handler was called and the action still registered
-    handler.assert_awaited_once_with("jerald")
+    handler.assert_awaited_once_with(neuro_action)
     assert neuro_api_component.has_handler("neuro_temp_action")
 
 
