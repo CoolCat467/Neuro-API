@@ -272,7 +272,7 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
         """Handle websocket connect event. Does not stop unless you call `stop` function."""
         url = event.data
 
-        def handle_handshake_error(exc: trio_websocket.HandshakeError):
+        def handle_handshake_error(exc: object) -> None:
             self.websocket_connect_failed()
 
         with catch({trio_websocket.HandshakeError: handle_handshake_error}):
