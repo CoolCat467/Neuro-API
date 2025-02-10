@@ -22,7 +22,7 @@ from __future__ import annotations
 
 __title__ = "api"
 __author__ = "CoolCat467"
-__version__ = "0.0.0"
+__version__ = "1.0.0"
 __license__ = "GNU General Public License Version 3"
 
 
