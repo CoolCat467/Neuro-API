@@ -75,7 +75,7 @@ package = true
 trio-websocket = { git = "https://github.com/python-trio/trio-websocket.git" }
 
 [tool.mypy]
-files = ["src/neuro_api/"]
+files = ["src/neuro_api/", "examples/"]
 show_column_numbers = true
 show_error_codes = true
 show_traceback = true

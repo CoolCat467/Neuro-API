@@ -28,6 +28,7 @@ __license__ = "GNU General Public License Version 3"
 
 import sys
 import traceback
+from typing import TYPE_CHECKING
 
 import trio
 from libcomponent.component import Event, ExternalRaiseManager
@@ -35,8 +36,53 @@ from libcomponent.component import Event, ExternalRaiseManager
 from neuro_api.command import Action
 from neuro_api.event import NeuroAPIComponent
 
+if TYPE_CHECKING:
+    from neuro_api.api import NeuroAction
+
 if sys.version_info < (3, 11):
     from exceptiongroup import ExceptionGroup
+
+
+class JeraldGame(NeuroAPIComponent):
+    """Jerald Game - The Game."""
+
+    __slots__ = ("wait_connect_event",)
+
+    def __init__(self, component_name: str) -> None:
+        """Initialize Jerald Game Neuro component."""
+        super().__init__(component_name, "Jerald Game")
+        self.wait_connect_event = trio.Event()
+
+    def bind_handlers(self) -> None:
+        """Register event handlers."""
+        self.register_handler(
+            "connect",
+            self.handle_connect,
+        )
+
+    def websocket_connect_failed(self) -> None:
+        """Handle websocket connection failure."""
+        self.wait_connect_event.set()
+
+        # Do default print message
+        super().websocket_connect_failed()
+
+    async def websocket_connect_successful(self) -> None:
+        """Handle websocket connection success."""
+        self.wait_connect_event.set()
+
+        await self.send_startup_command()
+
+        await self.send_context(
+            """You are playing Jerald Game - The Game.""",
+        )
+
+        # Do default print message
+        await super().websocket_connect_successful()
+
+    async def wait_for_websocket(self) -> None:
+        """Blocking until websocket connection trial ends."""
+        await self.wait_connect_event.wait()
 
 
 async def run() -> None:
@@ -45,29 +91,25 @@ async def run() -> None:
     async with trio.open_nursery(strict_exception_groups=True) as nursery:
         manager = ExternalRaiseManager("name", nursery)
 
-        neuro_component = NeuroAPIComponent("neuro_api", "Jerald Game")
-        manager.add_component(neuro_component)
-
-        neuro_component.register_handler(
-            "connect",
-            neuro_component.handle_connect,
-        )
+        jerald_game = JeraldGame("neuro_api")
+        manager.add_component(jerald_game)
 
         await manager.raise_event(Event("connect", url))
-        await trio.sleep(0.01)
 
-        if neuro_component.not_connected:
+        await jerald_game.wait_for_websocket()
+
+        if jerald_game.not_connected:
+            print("Neuro not connected, stopping.")
             return
 
-        await neuro_component.send_startup_command()
-
         async def handler(
-            name: str,
+            neuro_action: NeuroAction,
         ) -> tuple[bool, str | None]:
-            print(f"{name = }")
-            return name == '"jerald"', f"{name = }"
+            response = f"{neuro_action.data = }"
+            print(response)
+            return neuro_action.data == '"jerald"', response
 
-        await neuro_component.register_temporary_actions(
+        await jerald_game.register_temporary_actions(
             (
                 (
                     Action(
@@ -79,13 +121,13 @@ async def run() -> None:
                 ),
             ),
         )
-        await neuro_component.send_force_action(
+        await jerald_game.send_force_action(
             "state",
             "query",
             ["set_name"],
         )
         await trio.sleep(20)
-        await neuro_component.stop()
+        await jerald_game.stop()
 
 
 if __name__ == "__main__":

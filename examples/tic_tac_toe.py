@@ -28,6 +28,7 @@ __license__ = "GNU General Public License Version 3"
 
 import sys
 import traceback
+from enum import IntEnum, auto
 from typing import TYPE_CHECKING, NamedTuple, cast
 
 import trio
@@ -36,17 +37,13 @@ from libcomponent.component import Event, ExternalRaiseManager
 from neuro_api.command import Action
 from neuro_api.event import NeuroAPIComponent
 
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable, Iterable
+
+    from neuro_api.api import NeuroAction
+
 if sys.version_info < (3, 11):
     from exceptiongroup import ExceptionGroup
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable
-
-from enum import IntEnum, auto
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable
 
 
 class Player(IntEnum):
@@ -266,7 +263,12 @@ async def run() -> None:
         map_ = {-1: "O", 0: "No one (tie)", 1: "X"}
         neuro_played = trio.Event()
 
-        def game_action_mapper(game_action: GameAction):
+        def game_action_mapper(
+            game_action: GameAction,
+        ) -> tuple[
+            Action,
+            Callable[[NeuroAction], Awaitable[tuple[bool, str | None]]],
+        ]:
             player = map_[game_action.player]
             to_neuro_action = Action(
                 f"play_{game_action.row}_{game_action.col}",
@@ -274,7 +276,7 @@ async def run() -> None:
             )
 
             async def handler(
-                neuro_data: str | None,
+                neuro_action: NeuroAction,
             ) -> tuple[bool, str | None]:
                 print(f"Got {to_neuro_action.name}")
                 nonlocal state
