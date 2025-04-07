@@ -195,7 +195,7 @@ class Game:
         mutable[index] = action.player
         return State(
             cast(
-                tuple[int, int, int, int, int, int, int, int, int],
+                "tuple[int, int, int, int, int, int, int, int, int]",
                 tuple(mutable),
             ),
         )
