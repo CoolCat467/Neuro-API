@@ -34,6 +34,7 @@ from typing import (
     NamedTuple,
     TypedDict,
     TypeVar,
+    cast,
     get_type_hints,
 )
 
@@ -391,7 +392,7 @@ def shutdown_ready_command(game: str) -> bytes:
 def convert_parameterized_generic(generic: GenericAlias | T) -> T | type:
     """Return origin type of aliases."""
     if isinstance(generic, GenericAlias):
-        return generic.__origin__
+        return cast("type", generic.__origin__)
     if repr(generic).startswith("typing.NotRequired[") or repr(
         generic,
     ).startswith(
