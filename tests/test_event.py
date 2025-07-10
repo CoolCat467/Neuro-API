@@ -145,9 +145,9 @@ async def test_handle_connect(
     event = Event("connect", "ws://localhost:8000")
 
     @asynccontextmanager
-    async def with_statement() -> (
-        AsyncGenerator[trio_websocket.WebSocketConnection]
-    ):
+    async def with_statement() -> AsyncGenerator[
+        trio_websocket.WebSocketConnection
+    ]:
         yield mock_websocket
 
     async def handle_shutdown() -> None:

@@ -313,7 +313,7 @@ async def run() -> None:
                 while True:
                     print(str(state))
                     for idx, action in enumerate(actions):
-                        print(f"{idx+1}: {action}")
+                        print(f"{idx + 1}: {action}")
                     try:
                         index = int(input("Your choice: "))
                     except ValueError:
