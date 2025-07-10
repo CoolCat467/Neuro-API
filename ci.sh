@@ -28,7 +28,7 @@ python -m uv --version
 UV_VENV_SEED="pip"
 python -m uv venv --seed --allow-existing
 
-# Determine platform and activate virtual environment accordingly
+# Determine the platform and activate the virtual environment accordingly
 case "$OSTYPE" in
   linux-gnu*|linux-musl*|darwin*)
     source .venv/bin/activate

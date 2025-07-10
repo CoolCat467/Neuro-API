@@ -13,17 +13,13 @@ if [ -z "${GITHUB_STEP_SUMMARY+x}" ]; then
 fi
 
 # Autoformatter *first*, to avoid double-reporting errors
-# (we'd like to run further autoformatters but *after* merging;
-# see https://forum.bors.tech/t/pre-test-and-pre-merge-hooks/322)
-# autoflake --recursive --in-place .
-# pyupgrade --py3-plus $(find . -name "*.py")
-echo "::group::Black"
-if ! black --check src/$PROJECT; then
-    echo "* Black found issues" >> "$GITHUB_STEP_SUMMARY"
+echo "::group::Ruff format"
+if ! ruff format --check; then
+    echo "* Ruff formatting found issues" >> "$GITHUB_STEP_SUMMARY"
     EXIT_STATUS=1
-    black --diff src/$PROJECT
+    ruff format --diff
     echo "::endgroup::"
-    echo "::error:: Black found issues"
+    echo "::error:: Ruff formatting found issues"
 else
     echo "::endgroup::"
 fi
@@ -98,7 +94,6 @@ Problems were found by static analysis (listed above).
 To fix formatting and see remaining errors, run
 
     uv sync --extra tools
-    black src/$PROJECT
     ruff check src/$PROJECT
     mypy
     ./check.sh
