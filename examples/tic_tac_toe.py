@@ -29,7 +29,7 @@ from __future__ import annotations
 __title__ = "Tic Tac Toe"
 __author__ = "CoolCat467"
 __version__ = "0.0.0"
-__license__ = "GNU General Public License Version 3"
+__license__ = "MIT License"
 
 
 import sys
