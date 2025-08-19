@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -80,10 +80,7 @@ async def test_handle_action_no_handler(
     neuro_api_component: NeuroAPIComponent,
 ) -> None:
     """Test handling an action with no registered handler."""
-    neuro_action = Event(
-        "neuro_nonexistent_action",
-        {"id_": "1", "name": "nonexistent_action", "data": None},
-    )
+    neuro_action = NeuroAction("1", "nonexistent_action", None)
 
     with pytest.raises(
         ValueError,
@@ -153,12 +150,12 @@ async def test_handle_connect(
     async def handle_shutdown() -> None:
         raise EOFError("jerald waz here")
 
-    neuro_api_component.handle_immediate_shutdown = handle_shutdown
+    neuro_api_component.handle_immediate_shutdown = handle_shutdown  # type: ignore[method-assign]
 
     async def send_shutdown() -> str:
         return '{"command":"shutdown/immediate"}'
 
-    mock_websocket.get_message = send_shutdown
+    mock_websocket.get_message = send_shutdown  # type: ignore[method-assign]
 
     with patch("trio_websocket.open_websocket_url") as mock_function:
         mock_function.return_value = with_statement()
@@ -178,7 +175,7 @@ async def test_stop(
     await neuro_api_component.stop()
 
     # Check if the websocket was closed
-    mock_websocket.aclose.assert_awaited_once()
+    cast("AsyncMock", mock_websocket.aclose).assert_awaited_once()
 
 
 @pytest.mark.trio

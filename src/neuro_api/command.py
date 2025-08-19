@@ -42,7 +42,7 @@ import orjson
 from typing_extensions import NotRequired, is_typeddict
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 T = TypeVar("T")
 
@@ -146,7 +146,7 @@ def check_invalid_keys_recursive(
 def format_command(
     command: str,
     game: str,
-    data: dict[str, object] | None = None,
+    data: Mapping[str, object] | None = None,
 ) -> bytes:
     """Return json bytes blob from command details.
 
@@ -402,7 +402,7 @@ def convert_parameterized_generic(generic: GenericAlias | T) -> T | type:
     return generic
 
 
-def check_typed_dict(data: dict[str, object], typed_dict: type[T]) -> T:
+def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
     """Ensure data matches TypedDict definition. Return data as given typed dict.
 
     Raises ValueError if extra keys in data or missing keys in data.

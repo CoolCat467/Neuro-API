@@ -75,9 +75,6 @@ else
     INSTALLDIR=$(python -c "import os, $PROJECT; print(os.path.dirname($PROJECT.__file__))")
     cp ../pyproject.toml "$INSTALLDIR"
 
-    # get mypy tests a nice cache
-    MYPYPATH=".." mypy --config-file= --cache-dir=./.mypy_cache -c "import $PROJECT" >/dev/null 2>/dev/null || true
-
     echo "::endgroup::"
     echo "::group:: Run Tests"
     if coverage run --rcfile=../pyproject.toml -m pytest -ra --junitxml=../test-results.xml ../tests --verbose --durations=10 $flags; then

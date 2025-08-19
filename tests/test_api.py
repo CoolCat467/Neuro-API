@@ -44,7 +44,7 @@ async def test_connection_property(
     with pytest.raises(RuntimeError):
         _ = api.connection
 
-    api._connection = AsyncMock()
+    api.connect(AsyncMock())
     assert api.not_connected
 
 
@@ -130,7 +130,7 @@ async def test_send_force_action(
     action = command.Action("test_action", "Test Action", None)
     await api.register_actions([action])
 
-    api.send_command_data = AsyncMock()
+    api.send_command_data = AsyncMock()  # type: ignore[method-assign]
 
     await api.send_force_action("state", "query", action_names)
 
@@ -207,7 +207,7 @@ async def test_handle_graceful_shutdown_request(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
     api, _ = neuro_api
-    api.send_shutdown_ready = AsyncMock()
+    api.send_shutdown_ready = AsyncMock()  # type: ignore[method-assign]
 
     await api.handle_graceful_shutdown_request(True)
 
@@ -219,7 +219,7 @@ async def test_handle_immediate_shutdown(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
     api, _ = neuro_api
-    api.send_shutdown_ready = AsyncMock()
+    api.send_shutdown_ready = AsyncMock()  # type: ignore[method-assign]
 
     await api.handle_immediate_shutdown()
 
@@ -231,10 +231,10 @@ async def test_read_message_action_command(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
     api, _ = neuro_api
-    api.read_raw_message = AsyncMock(
+    api.read_raw_message = AsyncMock(  # type: ignore[method-assign]
         return_value=("action", {"id": "1", "name": "test_action"}),
     )
-    api.handle_action = AsyncMock()
+    api.handle_action = AsyncMock()  # type: ignore[method-assign]
 
     await api.read_message()
 
@@ -246,8 +246,10 @@ async def test_read_message_unknown_command(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
     api, _ = neuro_api
-    api.read_raw_message = AsyncMock(return_value=("unknown_command", None))
-    api.handle_unknown_command = AsyncMock()
+    api.read_raw_message = AsyncMock(  # type: ignore[method-assign]
+        return_value=("unknown_command", None),
+    )
+    api.handle_unknown_command = AsyncMock()  # type: ignore[method-assign]
 
     await api.read_message()
 
@@ -287,7 +289,7 @@ async def test_read_raw_message_graceful_shutdown(
         return_value=b'{"command":"shutdown/graceful","data":{"wants_shutdown":true}}',
     )
 
-    api.send_shutdown_ready = AsyncMock()
+    api.send_shutdown_ready = AsyncMock()  # type: ignore[method-assign]
 
     await api.read_message()
 
@@ -303,7 +305,7 @@ async def test_read_raw_message_immediate_shutdown(
         return_value=b'{"command":"shutdown/immediate"}',
     )
 
-    api.handle_immediate_shutdown = AsyncMock()
+    api.handle_immediate_shutdown = AsyncMock()  # type: ignore[method-assign]
 
     await api.read_message()
 

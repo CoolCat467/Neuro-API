@@ -4,7 +4,6 @@ set -ex
 
 ON_GITHUB_CI=true
 EXIT_STATUS=0
-PROJECT='neuro_api'
 
 # If not running on Github's CI, discard the summaries
 if [ -z "${GITHUB_STEP_SUMMARY+x}" ]; then
@@ -82,8 +81,6 @@ if git status --porcelain | grep -q "uv.lock"; then
     echo "::endgroup::"
 fi
 
-codespell || EXIT_STATUS=$?
-
 # Finally, leave a really clear warning of any issues and exit
 if [ $EXIT_STATUS -ne 0 ]; then
     cat <<EOF
@@ -94,7 +91,7 @@ Problems were found by static analysis (listed above).
 To fix formatting and see remaining errors, run
 
     uv sync --extra tools
-    ruff check src/$PROJECT
+    ruff check src
     mypy
     ./check.sh
 

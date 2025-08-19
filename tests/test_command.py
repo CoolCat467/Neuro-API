@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TypedDict
 
 import pytest
@@ -86,7 +88,7 @@ def test_format_command() -> None:
 
 
 def test_format_command_error() -> None:
-    command = {"kittens"}
+    command = "kittens"
     game = "Waffle Iron Mania III: The Brogleing"
 
     with pytest.raises(TypeError):
