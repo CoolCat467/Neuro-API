@@ -88,11 +88,12 @@ def test_format_command() -> None:
 
 
 def test_format_command_error() -> None:
-    command = "kittens"
+    # should be str but is set[str]
+    command = {"kittens"}
     game = "Waffle Iron Mania III: The Brogleing"
 
     with pytest.raises(TypeError):
-        format_command(command, game)
+        format_command(command, game)  # type: ignore[arg-type]
 
 
 def test_startup_command() -> None:

@@ -44,7 +44,6 @@ async def test_connection_property(
     with pytest.raises(RuntimeError):
         _ = api.connection
 
-    api.connect(AsyncMock())
     assert api.not_connected
 
 
