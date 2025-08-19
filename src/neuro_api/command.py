@@ -460,7 +460,11 @@ def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
 
 
 class IncomingActionMessageSchema(TypedDict):
-    """Incoming 'action' command message field."""
+    """Incoming 'action' command message field.
+
+    Data field from
+    https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#action-1
+    """
 
     id: str
     name: str
