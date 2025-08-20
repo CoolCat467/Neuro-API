@@ -261,6 +261,14 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
         """
         print("Failed to connect to websocket.")
 
+    async def websocket_connect_failed_async(self) -> None:  # pragma: nocover
+        """Handle when websocket connect has handshake failure.
+
+        Called shortly after `websocket_connect_failed` is called.
+
+        Default noop
+        """
+
     async def websocket_connect_successful(self) -> None:
         """Handle when websocket connect is successful.
 
@@ -276,15 +284,19 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
         def handle_handshake_error(exc: object) -> None:
             self.websocket_connect_failed()
 
+        failure = True
         with catch({trio_websocket.HandshakeError: handle_handshake_error}):
             async with trio_websocket.open_websocket_url(url) as websocket:
                 self.connect(websocket)
+                failure = False
                 await self.websocket_connect_successful()
                 try:
                     while not self.not_connected:  # pragma: nocover
                         await self.read_message()
                 finally:
                     self.connect(None)
+        if failure:
+            await self.websocket_connect_failed_async()
 
     async def stop(self, code: int = 1000, reason: str | None = None) -> None:
         """Close websocket and trigger not connected."""
