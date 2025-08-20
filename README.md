@@ -19,3 +19,6 @@ Install latest version, unofficial release:
 ```bash
 pip install git+https://github.com/CoolCat467/Neuro-API.git
 ```
+
+## List of Open Source projects that use this library
+- [Checkers Neuro API by CoolCat467](https://github.com/CoolCat467/Checkers-Neuro-Client)
