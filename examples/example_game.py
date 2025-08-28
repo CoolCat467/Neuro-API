@@ -40,7 +40,7 @@ import trio
 from libcomponent.component import Event, ExternalRaiseManager
 
 from neuro_api.command import Action
-from neuro_api.event import NeuroAPIComponent
+from neuro_api.trio_ws import TrioNeuroAPIComponent
 
 if TYPE_CHECKING:
     from neuro_api.api import NeuroAction
@@ -49,7 +49,7 @@ if sys.version_info < (3, 11):
     from exceptiongroup import ExceptionGroup
 
 
-class JeraldGame(NeuroAPIComponent):
+class JeraldGame(TrioNeuroAPIComponent):
     """Jerald Game - The Game."""
 
     __slots__ = ("wait_connect_event",)

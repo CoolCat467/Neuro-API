@@ -12,39 +12,46 @@ from neuro_api.command import Action
 
 @pytest.fixture
 async def neuro_api() -> tuple[AbstractNeuroAPI, AsyncMock]:
+    websocket = AsyncMock()
+
     class TestNeuroAPI(AbstractNeuroAPI):
         """Test Neuro API."""
 
         async def handle_action(self, action: NeuroAction) -> None:
             """Mock implementation for testing."""
 
-    websocket = AsyncMock()
-    api = TestNeuroAPI("Test Game", websocket)
+        async def read_from_websocket(self) -> str:
+            return await websocket.get_message()  # type: ignore[no-any-return]
+
+        async def write_to_websocket(self, data: str) -> None:
+            await websocket.send_message(data)
+
+    api = TestNeuroAPI("Test Game")
     return api, websocket
 
 
-@pytest.mark.trio
-async def test_not_connected_property(
-    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
-) -> None:
-    api, _ = neuro_api
-    api.connect(None)
-    assert api.not_connected
+##@pytest.mark.trio
+##async def test_not_connected_property(
+##    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+##) -> None:
+##    api, _ = neuro_api
+##    api.connect(None)
+##    assert api.not_connected
+##
+##    api.connect(AsyncMock())
+##    assert not api.not_connected
 
-    api.connect(AsyncMock())
-    assert not api.not_connected
 
-
-@pytest.mark.trio
-async def test_connection_property(
-    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
-) -> None:
-    api, _ = neuro_api
-    api.connect(None)
-    with pytest.raises(RuntimeError):
-        _ = api.connection
-
-    assert api.not_connected
+##@pytest.mark.trio
+##async def test_connection_property(
+##    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+##) -> None:
+##    api, _ = neuro_api
+##    api.connect(None)
+##    with pytest.raises(RuntimeError):
+##        _ = api.connection
+##
+##    assert api.not_connected
 
 
 @pytest.mark.trio
@@ -313,8 +320,9 @@ async def test_read_raw_message_immediate_shutdown(
 
 async def run() -> None:
     """Run program."""
+    from neuro_api.trio_ws import TrioNeuroAPI
 
-    class Game(AbstractNeuroAPI):
+    class Game(TrioNeuroAPI):
         """Game context."""
 
         __slots__ = ()

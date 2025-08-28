@@ -28,9 +28,6 @@ __license__ = "GNU Lesser General Public License Version 3"
 
 from typing import TYPE_CHECKING
 
-import trio
-import trio_websocket
-from exceptiongroup import catch
 from libcomponent.component import Component, Event
 
 from neuro_api.api import AbstractNeuroAPI, NeuroAction
@@ -41,22 +38,19 @@ if TYPE_CHECKING:
     from neuro_api.command import Action
 
 
-class NeuroAPIComponent(Component, AbstractNeuroAPI):
-    """Neuro API Component."""
+class AbstractNeuroAPIComponent(Component, AbstractNeuroAPI):
+    """Abstract Neuro API Component."""
 
-    __slots__ = ("_action_map",)
+    # __slots__ = ()
 
     def __init__(
         self,
-        name: str,
+        component_name: str,
         game_title: str,
-        websocket: trio_websocket.WebSocketConnection | None = None,
     ) -> None:
         """Initialize Neuro API Component."""
-        Component.__init__(self, name)
-        AbstractNeuroAPI.__init__(self, game_title, websocket)
-
-        self._action_map: dict[str, str] = {}
+        Component.__init__(self, component_name)
+        AbstractNeuroAPI.__init__(self, game_title)
 
     def _send_result_wrapper(
         self,
@@ -231,66 +225,3 @@ class NeuroAPIComponent(Component, AbstractNeuroAPI):
                 neuro_action,
             ),
         )
-
-    async def read_message(self) -> None:
-        """Read message from Neuro.
-
-        Automatically handles `actions/reregister_all` commands.
-
-        Calls handle_graceful_shutdown_request and handle_immediate_shutdown
-        for graceful and immediate shutdown requests respectively.
-
-        Calls handle_action for `action` commands.
-
-        Calls handle_unknown_command for any other command.
-
-        Raises ValueError if extra keys in action command data or
-        missing keys in action command data.
-        Raises TypeError on action command key type mismatch.
-        """
-        try:
-            await super().read_message()
-        except trio_websocket.ConnectionClosed:
-            # Stop websocket if connection closed.
-            await self.stop()
-
-    def websocket_connect_failed(self) -> None:  # pragma: nocover
-        """Handle when websocket connect has handshake failure.
-
-        Default just prints and error message
-        """
-        print("Failed to connect to websocket.")
-
-    async def websocket_connect_successful(self) -> None:
-        """Handle when websocket connect is successful.
-
-        Default just prints and success message
-        """
-        print("Connected to websocket.")
-        await trio.lowlevel.checkpoint()
-
-    async def handle_connect(self, event: Event[str]) -> None:
-        """Handle websocket connect event. Does not stop unless you call `stop` function."""
-        url = event.data
-
-        def handle_handshake_error(exc: object) -> None:
-            self.websocket_connect_failed()
-
-        with catch({trio_websocket.HandshakeError: handle_handshake_error}):
-            async with trio_websocket.open_websocket_url(url) as websocket:
-                self.connect(websocket)
-                await self.websocket_connect_successful()
-                try:
-                    while not self.not_connected:  # pragma: nocover
-                        await self.read_message()
-                finally:
-                    self.connect(None)
-
-    async def stop(self, code: int = 1000, reason: str | None = None) -> None:
-        """Close websocket and trigger not connected."""
-        if not self.not_connected:
-            await self.connection.aclose(code, reason)
-            self.connect(None)
-        else:
-            self.connect(None)
-            await trio.lowlevel.checkpoint()

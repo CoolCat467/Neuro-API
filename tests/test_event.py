@@ -10,7 +10,7 @@ from libcomponent.component import ComponentManager, Event
 
 from neuro_api.api import NeuroAction
 from neuro_api.command import Action
-from neuro_api.event import NeuroAPIComponent
+from neuro_api.trio_ws import TrioNeuroAPIComponent
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
@@ -30,9 +30,9 @@ def mock_websocket() -> MagicMock:
 @pytest.fixture
 def neuro_api_component(
     mock_websocket: trio_websocket.WebSocketConnection,
-) -> Generator[NeuroAPIComponent, None, None]:
-    """Fixture to create an instance of NeuroAPIComponent."""
-    component = NeuroAPIComponent(
+) -> Generator[TrioNeuroAPIComponent, None, None]:
+    """Fixture to create an instance of TrioNeuroAPIComponent."""
+    component = TrioNeuroAPIComponent(
         "test_component",
         "Test Game",
         mock_websocket,
@@ -45,7 +45,7 @@ def neuro_api_component(
 
 @pytest.mark.trio
 async def test_register_neuro_actions(
-    neuro_api_component: NeuroAPIComponent,
+    neuro_api_component: TrioNeuroAPIComponent,
 ) -> None:
     """Test registering neuro actions."""
     action = Action("test_action", "A test action", {"type": "string"})
@@ -58,7 +58,9 @@ async def test_register_neuro_actions(
 
 
 @pytest.mark.trio
-async def test_handle_action(neuro_api_component: NeuroAPIComponent) -> None:
+async def test_handle_action(
+    neuro_api_component: TrioNeuroAPIComponent,
+) -> None:
     """Test handling an action."""
     action = Action("test_action", "A test action", {"type": "string"})
     handler = AsyncMock(return_value=(True, "Action executed successfully."))
@@ -77,7 +79,7 @@ async def test_handle_action(neuro_api_component: NeuroAPIComponent) -> None:
 
 @pytest.mark.trio
 async def test_handle_action_no_handler(
-    neuro_api_component: NeuroAPIComponent,
+    neuro_api_component: TrioNeuroAPIComponent,
 ) -> None:
     """Test handling an action with no registered handler."""
     neuro_action = NeuroAction("1", "nonexistent_action", None)
@@ -91,7 +93,7 @@ async def test_handle_action_no_handler(
 
 @pytest.mark.trio
 async def test_register_temporary_actions(
-    neuro_api_component: NeuroAPIComponent,
+    neuro_api_component: TrioNeuroAPIComponent,
 ) -> None:
     """Test registering temporary actions."""
     action = Action("temp_action", "A temporary action", {"type": "string"})
@@ -113,7 +115,7 @@ async def test_register_temporary_actions(
 
 @pytest.mark.trio
 async def test_register_temporary_actions_unsuccessful_remains(
-    neuro_api_component: NeuroAPIComponent,
+    neuro_api_component: TrioNeuroAPIComponent,
 ) -> None:
     """Test registering temporary actions."""
     action = Action("temp_action", "A temporary action", {"type": "string"})
@@ -135,7 +137,7 @@ async def test_register_temporary_actions_unsuccessful_remains(
 
 @pytest.mark.trio
 async def test_handle_connect(
-    neuro_api_component: NeuroAPIComponent,
+    neuro_api_component: TrioNeuroAPIComponent,
     mock_websocket: trio_websocket.WebSocketConnection,
 ) -> None:
     """Test handling websocket connect event."""
@@ -168,7 +170,7 @@ async def test_handle_connect(
 
 @pytest.mark.trio
 async def test_stop(
-    neuro_api_component: NeuroAPIComponent,
+    neuro_api_component: TrioNeuroAPIComponent,
     mock_websocket: trio_websocket.WebSocketConnection,
 ) -> None:
     """Test stopping the component."""
@@ -180,7 +182,7 @@ async def test_stop(
 
 @pytest.mark.trio
 async def test_stop_when_not_connected(
-    neuro_api_component: NeuroAPIComponent,
+    neuro_api_component: TrioNeuroAPIComponent,
 ) -> None:
     """Test stopping the component when not connected."""
     neuro_api_component.connect(None)  # Simulate not connected

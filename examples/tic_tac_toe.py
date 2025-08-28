@@ -41,7 +41,7 @@ import trio
 from libcomponent.component import Event, ExternalRaiseManager
 
 from neuro_api.command import Action
-from neuro_api.event import NeuroAPIComponent
+from neuro_api.trio_ws import TrioNeuroAPIComponent
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable
@@ -207,7 +207,7 @@ class Game:
         )
 
 
-class TicTacToeNeuroComponent(NeuroAPIComponent):
+class TicTacToeNeuroComponent(TrioNeuroAPIComponent):
     """Tic Tac Toe game Neuro component."""
 
     __slots__ = ("wait_connect_event",)
