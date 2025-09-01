@@ -20,7 +20,7 @@ repos:
       - id: sort-simple-yaml
         files: .pre-commit-config.yaml
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.9
+    rev: v0.12.11
     hooks:
       - id: ruff-format
       - id: ruff-check
@@ -32,7 +32,7 @@ repos:
     hooks:
       - id: badgie
   - repo: https://github.com/adhtruong/mirrors-typos
-    rev: v1.35.4
+    rev: v1.35.6
     hooks:
       - id: typos
   - repo: https://github.com/woodruffw/zizmor-pre-commit
