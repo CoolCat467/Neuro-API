@@ -6,8 +6,8 @@ Neuro-API Documentation
    :maxdepth: 2
    :caption: Contents:
 
-   api
    command
+   api
    event
    trio_ws
 
