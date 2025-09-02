@@ -1,3 +1,6 @@
+# Project-specific generated files
+docs/build/
+
 # Temp file during Mypy processing
 mypy_annotate.dat
 test-results.xml
