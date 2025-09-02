@@ -1,24 +1,19 @@
-Neuro-API documentation
+
+Neuro-API Documentation
 =======================
-
-.. automodule:: neuro_api
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: neuro_api.command
-   :members:
-
-.. automodule:: neuro_api.api
-   :members:
-
-.. automodule:: neuro_api.event
-   :members:
-
-.. automodule:: neuro_api.trio_ws
-   :members:
-
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+   api
+   command
+   event
+   trio_ws
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
