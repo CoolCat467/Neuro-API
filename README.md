@@ -20,6 +20,9 @@ Install latest version, unofficial release:
 pip install git+https://github.com/CoolCat467/Neuro-API.git
 ```
 
+## Documentation
+See https://neuro-api.readthedocs.io/en/latest/
+
 ## List of Open Source projects that use this library
 - [Checkers Neuro API by CoolCat467](https://github.com/CoolCat467/Checkers-Neuro-Client)
 - [Neuro-Canvas by Kaya-Kaya](https://github.com/Kaya-Kaya/neuro-canvas)
