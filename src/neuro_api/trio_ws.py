@@ -109,8 +109,7 @@ class TrioNeuroAPIComponent(AbstractNeuroAPIComponent, TrioNeuroAPI):
     ) -> None:
         """Initialize Trio-websocket Neuro API Component."""
         AbstractNeuroAPIComponent.__init__(self, component_name, game_title)
-        if connection is not None:
-            self.connect(connection)
+        self.connect(connection)
 
     async def read_message(self) -> None:
         """Read message from Neuro.

@@ -279,6 +279,7 @@ async def run() -> None:
             to_neuro_action = Action(
                 f"play_{game_action.row}_{game_action.col}",
                 f"Plays an {player} at row {game_action.row} column {game_action.col}",
+                {},
             )
 
             async def handler(
