@@ -1,2 +1,18 @@
-sphinx
-sphinx-rtd-theme
+# RTD is currently installing 1.5.3, which has a bug in :lineno-match: (??)
+# sphinx 5.3 doesn't work with our _NoValue workaround
+sphinx >= 6.0
+jinja2
+# >= is necessary to prevent `uv` from selecting a `Sphinx` version this does not support
+sphinx_rtd_theme >= 3
+sphinxcontrib-jquery
+sphinxcontrib-trio
+towncrier
+sphinx-codeautolink
+
+# Neuro-API's own dependencies
+trio-websocket~=0.12.2
+orjson>=3.10,<4
+trio~=0.30.0
+exceptiongroup>=1.2.2
+libcomponent~=0.0.3
+typing_extensions>=4.12.2
