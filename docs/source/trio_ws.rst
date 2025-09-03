@@ -1,16 +1,9 @@
-Trio_ws Module
+trio_ws Module
 ==============
 
 Overview
 ---------
 Trio-websocket specific implementation.
-
-Module Contents
----------------
-.. automodule:: neuro_api.trio_ws
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Classes
 -------

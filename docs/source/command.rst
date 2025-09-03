@@ -11,15 +11,3 @@ Module Contents
    :members:
    :undoc-members:
    :show-inheritance:
-
-Classes
--------
-.. autoclass:: neuro_api.command.Action
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: neuro_api.command.IncomingActionMessageSchema
-   :members:
-   :undoc-members:
-   :show-inheritance:
