@@ -40,7 +40,21 @@ if TYPE_CHECKING:
 
 
 class NeuroAction(NamedTuple):
-    """Neuro Action object."""
+    """Representation of a Neuro Action with its associated details.
+
+    A NamedTuple that encapsulates the essential information for an
+    action in the Neuro game interaction system.
+
+    Attributes:
+        id_ (str): Unique identifier for the action.
+            The trailing underscore is used to avoid conflicts with
+            Python's built-in `id` keyword.
+        name (str): Name of the action to be performed.
+        data (str | None): Optional additional data associated with
+            the action. Can be None if no additional information
+            is required.
+
+    """
 
     id_: str
     name: str
@@ -48,7 +62,23 @@ class NeuroAction(NamedTuple):
 
 
 class AbstractNeuroAPI(metaclass=ABCMeta):
-    """Abstract Neuro API."""
+    """Abstract base class for the Neuro Game Interaction API.
+
+    Provides a foundational interface for managing game actions and
+    interactions with the Neuro system. This class is designed to be
+    subclassed by specific game implementations.
+
+    Attributes:
+        game_title (str): The title or name of the game being integrated.
+        _currently_registered (dict[str, tuple[str, dict[str, object] | None]]):
+            Internal registry of currently registered actions, mapping
+            action names to their details.
+
+    Note:
+        This is an abstract base class that requires implementation
+        of specific game interaction methods in subclasses.
+
+    """
 
     # __slots__ = ("_currently_registered", "game_title")
 
@@ -56,7 +86,17 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         self,
         game_title: str,
     ) -> None:
-        """Initialize NeuroAPI."""
+        """Initialize the Neuro API for a specific game.
+
+        Args:
+            game_title (str): The name of the game to be integrated
+                with the Neuro system.
+
+        Note:
+            Initializes the internal action registry to track
+            currently registered actions.
+
+        """
         self.game_title = game_title
         # Keep track of currently registered actions to be able to handle
         # `actions/reregister_all` command.
@@ -66,7 +106,17 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         ] = {}
 
     def get_registered(self) -> tuple[str, ...]:
-        """Return all currently registered Neuro action names."""
+        """Return the names of all currently registered actions.
+
+        Returns:
+            tuple[str, ...]: A tuple containing the names of all
+            actions currently registered in the Neuro API.
+
+        Note:
+            This method provides a snapshot of registered actions
+            at the time of calling.
+
+        """
         return tuple(self._currently_registered)
 
     @abstractmethod

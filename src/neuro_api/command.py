@@ -77,6 +77,7 @@ INVALID_SCHEMA_KEYS: Final = frozenset(
         "if",
         "maxProperties",
         "minProperties",
+        "multipleOf",
         "not",
         "oneOf",
         "patternProperties",
@@ -93,17 +94,32 @@ INVALID_SCHEMA_KEYS: Final = frozenset(
 class Action(NamedTuple):
     """Registerable command that Neuro can execute whenever she wants.
 
-    Name should be a unique identifier. This should be a lowercase
-    string, with words separated by underscores or dashes (e.g.
-    "join_friend_lobby", "use_item").
+    A unique, executable action with well-defined characteristics.
 
-    Description should be a plaintext description of what this action
-    does. This information will be directly received by Neuro.
+    Attributes:
+        name (str): A unique identifier for the action.
+            Recommended format: lowercase, with words separated
+            by underscores or dashes (e.g., "join_friend_lobby", "use_item").
 
-    Schema is a valid simple JSON schema object that describes how the
-    response data should look like. If your action does not have any
-    parameters, you can omit this field or set it to {}. This
-    information will be directly received by Neuro.
+        description (str): A plain-text description of what the action does.
+            This description will be directly received by Neuro.
+
+        schema (dict[str, object], optional): A valid JSON schema object
+            describing the expected response data structure.
+            This information will be directly received by Neuro.
+
+    Notes:
+        - If no parameters are needed, omit the schema or set to an empty dict {}.
+        - Schemas must have ``"type": "object"``.
+        - For non-object type schemas, wrap the schema in an object with a property.
+
+    Examples:
+        >>> action = Action(
+        ...     name="use_item",
+        ...     description="Use an item in the game",
+        ...     schema={"type": "object", "properties": {...}}
+        ... )
+
     """
 
     name: str
@@ -116,11 +132,17 @@ def check_invalid_keys_recursive(
 ) -> list[str]:
     """Recursively checks for invalid keys in the schema.
 
-    Returns a list of invalid keys that were found.
+    Args:
+        sub_schema (dict[str, Any]): The schema to check for invalid keys.
 
-    Copied from neuro-api-tony/src/neuro_api_tony/api.py
-    found at https://github.com/Pasu4/neuro-api-tony,
-    which is licensed under the MIT License.
+    Returns:
+        list[str]: A list of invalid keys that were found.
+
+    Note:
+        Copied from neuro-api-tony/src/neuro_api_tony/api.py
+        found at https://github.com/Pasu4/neuro-api-tony,
+        which is licensed under the MIT License.
+
     """
     invalid_keys = []
 
@@ -151,17 +173,20 @@ def format_command(
 ) -> bytes:
     """Return json bytes blob from command details.
 
-    Arguments:
-    - `command`: The websocket command.
-    - `game`: The game name.
-        This is used to identify the game. It should _always_ be the
-        same and should not change. You should use the game's display
-        name, including any spaces and symbols (e.g. `"Buckshot
-        Roulette"`).
-    - `data`: The command data.
-        This object is different depending on which command you are
-        sending/receiving, and some commands may not have any data, in
-        which case this object will be either `undefined` or `{}`.
+    Args:
+        command (str): The websocket command.
+        game (str): The game name. This is used to identify the game.
+            It should _always_ be the same and should not change.
+            You should use the game's display name, including any
+            spaces and symbols (e.g. `"Buckshot Roulette"`).
+        data (Mapping[str, object], optional): The command data.
+            This object is different depending on which command you are
+            sending/receiving, and some commands may not have any data,
+            in which case this object will be either `undefined` or `{}`.
+            Defaults to None.
+
+    Returns:
+        bytes: JSON bytes blob representing the formatted command.
 
     """
     payload: dict[str, Any] = {
@@ -187,6 +212,13 @@ def startup_command(game: str) -> bytes:
     This message clears all previously registered actions for this game
     and does initial setup, and as such should be the very first message
     that you send.
+
+    Args:
+        game (str): The name of the game to start up.
+
+    Returns:
+        bytes: A formatted startup command for the specified game.
+
     """
     return format_command("startup", game)
 
@@ -201,15 +233,19 @@ def context_command(
     This message can be sent to let Neuro know about something that is
     happening in game.
 
-    Arguments:
-    - `message`:
-        A plaintext message that describes what is happening in the
-        game. **This information will be directly received by Neuro.**
-    - `silent`:
-        If True, the message will be added to Neuro's context without
-        prompting her to respond to it. If False, Neuro _might_
-        respond to the message directly, unless she is busy talking to
-        someone else or to chat.
+    Args:
+        game (str): The name of the game context is being sent for.
+        message (str): A plaintext message that describes what is
+            happening in the game. **This information will be directly
+            received by Neuro.**
+        silent (bool, optional): If True, the message will be added to
+            Neuro's context without prompting her to respond to it.
+            If False, Neuro _might_ respond to the message directly,
+            unless she is busy talking to someone else or to chat.
+            Defaults to True.
+
+    Returns:
+        bytes: A formatted context command for the specified game.
 
     """
     return format_command(
@@ -227,9 +263,18 @@ def actions_register_command(
 
     This message registers one or more actions for Neuro to use.
 
-    actions:
-        A list of actions to be registered. If you try to register an
-        action that is already registered, it will be ignored.
+    Args:
+        game (str): The name of the game for which actions are being registered.
+        actions (list[Action]): A list of actions to be registered.
+            If you try to register an action that is already registered,
+            it will be ignored.
+
+    Returns:
+        bytes: A formatted command to register the specified actions for the game.
+
+    Raises:
+        AssertionError: If the actions list is empty. At least one action must be registered.
+
     """
     assert actions, "Must register at least one action."
     return format_command(
@@ -248,9 +293,19 @@ def actions_unregister_command(
     This message unregisters one or more actions, preventing Neuro from
     using them anymore.
 
-    action_names:
-        The names of the actions to unregister. If you try to unregister
-        an action that isn't registered, there will be no problem.
+    Args:
+        game (str): The name of the game for which actions are being unregistered.
+        action_names (Sequence[str]): The names of the actions to unregister.
+            If you try to unregister an action that isn't registered,
+            there will be no problem.
+
+    Returns:
+        bytes: A formatted command to unregister the specified actions for the game.
+
+    Raises:
+        AssertionError: If the action_names sequence is empty. At least one
+        action name must be provided to unregister.
+
     """
     assert action_names, "Must unregister at least one action."
     return format_command(
@@ -277,25 +332,31 @@ def actions_force_command(
     Sending an action force while another one is in progress will cause
     problems!
 
-    Parameters
-    ----------
-    - `state`:
-        An arbitrary string that describes the current state of the
-        game. This can be plaintext, JSON, Markdown, or any other
-        format. **This information will be directly received by Neuro.**
-    - `query`:
-        A plaintext message that tells Neuro what she is currently
-        supposed to be doing (e.g. `"It is now your turn. Please perform
-        an action. If you want to use any items, you should use them
-        before picking up the shotgun."`). **This information will be
-        directly received by Neuro.**
-    - `ephemeral_context`:
-        If False, the context provided in the `state` and `query`
-        parameters will be remembered by Neuro after the actions force
-        is completed. If True, Neuro will only remember it for the
-        duration of the actions force.
-    - `action_names`:
-        The names of the actions that Neuro should choose from.
+    Args:
+        game (str): The name of the game for which actions are being forced.
+        state (str): An arbitrary string that describes the current state
+            of the game. This can be plaintext, JSON, Markdown, or any
+            other format. **This information will be directly received
+            by Neuro.**
+        query (str): A plaintext message that tells Neuro what she is
+            currently supposed to be doing (e.g. `"It is now your turn.
+            Please perform an action. If you want to use any items, you
+            should use them before picking up the shotgun."`).
+            **This information will be directly received by Neuro.**
+        action_names (Sequence[str]): The names of the actions that
+            Neuro should choose from.
+        ephemeral_context (bool, optional): If False, the context
+            provided in the `state` and `query` parameters will be
+            remembered by Neuro after the actions force is completed.
+            If True, Neuro will only remember it for the duration of
+            the actions force. Defaults to False.
+
+    Returns:
+        bytes: A formatted command to force actions for the specified game.
+
+    Warning:
+        Neuro can only handle one action force at a time. Sending an
+        action force while another one is in progress will cause problems!
 
     """
     assert action_names, "Must force at least one action name."
@@ -329,29 +390,31 @@ def actions_result_command(
     result of her action!
     Please make sure to send this as soon as possible.
     It should usually be sent after validating the action parameters,
-    before it is actually executed in-game
+    before it is actually executed in-game.
 
-    Parameters
-    ----------
-    - `id`:
-        The id of the action that this result is for. This is grabbed
-        from the action message directly.
-    - `success`:
-        Whether or not the action was successful. _If this is `false`
-        and this action is part of an actions force, the whole actions
-        force will be immediately retried by Neuro._
-    - `message`:
-        A plaintext message that describes what happened when the action
-        was executed. If not successful, this should be an error
-        message. If successful, this can either be empty, or provide a
-        _small_ context to Neuro regarding the action she just took
-        (e.g. `"Remember to not share this with anyone."`). **This
-        information will be directly received by Neuro.**
+    Args:
+        game (str): The name of the game for which the action result is being reported.
+        id_ (str): The id of the action that this result is for. This is
+            grabbed from the action message directly.
+        success (bool): Whether or not the action was successful. _If this
+            is `false` and this action is part of an actions force, the
+            whole actions force will be immediately retried by Neuro._
+        message (str, optional): A plaintext message that describes what
+            happened when the action was executed. If not successful, this
+            should be an error message. If successful, this can either be
+            empty, or provide a _small_ context to Neuro regarding the
+            action she just took (e.g. `"Remember to not share this with
+            anyone."`). **This information will be directly received by Neuro.**
+            Defaults to None.
 
-    Since setting `success` to `false` will retry the action force if
-    there was one, if the action was not successful but you don't want
-    it to be retried, you should set `success` to `true` and provide an
-    error message in the `message` field.
+    Returns:
+        bytes: A formatted command to report the result of an action.
+
+    Note:
+        Since setting `success` to `false` will retry the action force if
+        there was one, if the action was not successful but you don't want
+        it to be retried, you should set `success` to `true` and provide
+        an error message in the `message` field.
 
     """
     payload = {
@@ -376,13 +439,25 @@ def shutdown_ready_command(game: str) -> bytes:
 
     This is part of the game automation API, which will only be used for
     games that Neuro can launch by herself. As such, most games will not
-    need to use implement this.
+    need to implement this.
 
-    This message should be sent as a response to a graceful or an
-    imminent shutdown request, after progress has been saved. After this
-    is sent, Neuro will close the game herself by terminating the
-    process, so to reiterate you must definitely ensure that progress
-    has already been saved.
+    Args:
+        game (str): The name of the game that is ready to be shut down.
+
+    Returns:
+        bytes: A formatted command indicating the game is ready for shutdown.
+
+    Note:
+        This message should be sent as a response to a graceful or an
+        imminent shutdown request, after progress has been saved. After this
+        is sent, Neuro will close the game herself by terminating the
+        process, so to reiterate you must definitely ensure that progress
+        has already been saved.
+
+    Warning:
+        This API is only applicable to games that Neuro can launch
+        independently. Most games will not need to use this function.
+
     """
     return format_command(
         "shutdown/ready",
@@ -391,7 +466,26 @@ def shutdown_ready_command(game: str) -> bytes:
 
 
 def convert_parameterized_generic(generic: GenericAlias | T) -> T | type:
-    """Return origin type of aliases."""
+    """Return origin type of aliases.
+
+    This function extracts the base type from various generic type aliases,
+    handling different type representations and special cases.
+
+    Args:
+        generic (GenericAlias | T): The generic type or alias to be converted.
+            Can be a GenericAlias or any other type.
+
+    Returns:
+        T | type: The origin type of the input generic alias.
+            - For GenericAlias, returns the original type.
+            - For NotRequired types, returns the wrapped type.
+            - For other types, returns the input type as-is.
+
+    Note:
+        This function handles special cases like NotRequired from typing
+        and typing_extensions modules.
+
+    """
     if isinstance(generic, GenericAlias):
         return cast("type", generic.__origin__)
     if repr(generic).startswith("typing.NotRequired[") or repr(
@@ -404,12 +498,37 @@ def convert_parameterized_generic(generic: GenericAlias | T) -> T | type:
 
 
 def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
-    """Ensure data matches TypedDict definition. Return data as given typed dict.
+    """Ensure data matches TypedDict definition and return it as a typed dict.
 
-    Raises ValueError if extra keys in data or missing keys in data.
-    Raises TypeError on key type mismatch.
+    This function validates that the input data conforms to a TypedDict
+    definition by checking for:
+    - Presence of required keys
+    - Absence of extra keys
+    - Type correctness of values
 
-    Will not work properly for nested types.
+    Args:
+        data (Mapping[str, object]): The input data to be validated.
+        typed_dict (type[T]): The TypedDict class used for validation.
+
+    Returns:
+        T: The input data converted to the specified TypedDict type.
+
+    Raises:
+        ValueError: If:
+            - Extra keys are present in the data
+            - Required keys are missing from the data
+        TypeError: If the type of any key's value does not match its
+        annotated type.
+
+    Warning:
+        - This function does not work properly for nested types.
+        - Optional keys (NotRequired) are handled, but nested type
+          checking is limited.
+
+    Note:
+        The function uses type hints and custom type conversion to
+        perform thorough type checking.
+
     """
     assert is_typeddict(typed_dict)
     required = typed_dict.__required_keys__  # type: ignore[attr-defined]
@@ -461,10 +580,21 @@ def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
 
 
 class IncomingActionMessageSchema(TypedDict):
-    """Incoming 'action' command message field.
+    """Schema for incoming 'action' command message fields.
 
-    Data field from
-    https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#action-1
+    Represents the structure of an action message as specified in the
+    Neuro Game SDK API documentation.
+
+    Attributes:
+        id (str): Unique identifier for the action message.
+        name (str): Name of the action being requested.
+        data (str, optional): Additional data associated with the action.
+            This field is not required and can be omitted.
+
+    Reference:
+        Specification details:
+        https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#action-1
+
     """
 
     id: str
@@ -473,10 +603,25 @@ class IncomingActionMessageSchema(TypedDict):
 
 
 def check_action(action: Action) -> None:
-    """Check to make sure action to register is valid.
+    """Validate an action before registration.
 
-    Raises ValueError if action name has invalid characters or bad
-    schema key.
+    Performs comprehensive validation of an action to ensure it meets
+    the required naming and schema constraints before being registered.
+
+    Args:
+        action (Action): The action to be validated before registration.
+
+    Raises:
+        ValueError: If:
+            - The action name contains invalid characters
+            - The action schema contains invalid keys
+
+    Note:
+        - Invalid characters for action names are defined by
+          ACTION_NAME_ALLOWED_CHARS
+        - Schema validation is performed recursively using
+          check_invalid_keys_recursive()
+
     """
     name_bad_chars = set(action.name) - ACTION_NAME_ALLOWED_CHARS
     if name_bad_chars:
