@@ -32,9 +32,10 @@ __version__ = "0.0.0"
 __license__ = "MIT License"
 
 
+import os
 import sys
 import traceback
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 import trio
 from libcomponent.component import Event, ExternalRaiseManager
@@ -42,11 +43,19 @@ from libcomponent.component import Event, ExternalRaiseManager
 from neuro_api.command import Action
 from neuro_api.trio_ws import TrioNeuroAPIComponent
 
+# Things we need imported for type checking reasons but not at runtime
 if TYPE_CHECKING:
     from neuro_api.api import NeuroAction
 
+# For compatibility with Python versions below 3.11, use the backported
+# ExceptionGroup
 if sys.version_info < (3, 11):
-    from exceptiongroup import ExceptionGroup
+    pass
+
+
+WEBSOCKET_ENV_VAR: Final = "NEURO_SDK_WS_URL"
+DEFAULT_WEBSOCKET: Final = "ws://localhost:8000"
+WEBSOCKET_CONNECTION_WAIT_TIME: Final = 0.1
 
 
 class JeraldGame(TrioNeuroAPIComponent):
@@ -91,16 +100,17 @@ class JeraldGame(TrioNeuroAPIComponent):
         await self.wait_connect_event.wait()
 
 
-async def run() -> None:
+async def main_async() -> None:
     """Run test."""
-    url = "ws://localhost:8000"
+    websocket_url = os.environ.get(WEBSOCKET_ENV_VAR, DEFAULT_WEBSOCKET)
+
     async with trio.open_nursery(strict_exception_groups=True) as nursery:
         manager = ExternalRaiseManager("name", nursery)
 
         jerald_game = JeraldGame("neuro_api")
         manager.add_component(jerald_game)
 
-        await manager.raise_event(Event("connect", url))
+        await manager.raise_event(Event("connect", websocket_url))
 
         await jerald_game.wait_for_websocket()
 
@@ -136,8 +146,14 @@ async def run() -> None:
         await jerald_game.stop()
 
 
-if __name__ == "__main__":
+def cli_run() -> None:
+    """CLI entry point."""
+    print(f"{__title__} v{__version__}\nProgrammed by {__author__}.\n")
     try:
-        trio.run(run)
-    except ExceptionGroup as exc:
-        traceback.print_exception(exc)
+        trio.run(main_async)
+    except Exception:
+        traceback.print_exc()
+
+
+if __name__ == "__main__":
+    cli_run()
