@@ -80,10 +80,11 @@ class AbstractNeuroAPIComponent(Component, AbstractNeuroAPI):
         action_handlers should be an iterable of (Action,
         NeuroAction event handler function).
 
-        Raises AttributeError if this component is not bound to a manager.
+        Raises:
+            AttributeError: If this component is not bound to a manager.
+            ValueError: If action name has invalid characters or bad
+                schema key.
 
-        Raises ValueError if action name has invalid characters or bad
-        schema key.
         """
         handlers = tuple(action_handlers)
         self.register_handlers(

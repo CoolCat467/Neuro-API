@@ -70,9 +70,6 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
 
     Attributes:
         game_title (str): The title or name of the game being integrated.
-        _currently_registered (dict[str, tuple[str, dict[str, object] | None]]):
-            Internal registry of currently registered actions, mapping
-            action names to their details.
 
     Note:
         This is an abstract base class that requires implementation
@@ -121,58 +118,98 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
 
     @abstractmethod
     async def write_to_websocket(self, data: str) -> None:
-        """Write message to websocket."""
+        """Abstract method to write a message to the websocket.
+
+        This method must be implemented by subclasses to define
+        the specific mechanism for sending data over a websocket.
+
+        Args:
+            data (str): The message to be sent over the websocket.
+
+        """
 
     @abstractmethod
     async def read_from_websocket(
         self,
     ) -> bytes | bytearray | memoryview | str:
-        """Return message read from websocket."""
+        """Abstract method to read a message from the websocket.
+
+        This method must be implemented by subclasses to define
+        the specific mechanism for receiving data from a websocket.
+
+        Returns:
+            bytes | bytearray | memoryview | str: The message
+            received from the websocket, supporting anything
+            ``orjson.loads`` can handle.
+
+        """
 
     async def send_command_data(self, data: bytes) -> None:
         """Send command data over the websocket.
 
-        Could raise `UnicodeDecodeError` if data is unable to be decoded.
+        Converts the input bytes to a UTF-8 encoded string and
+        writes it to the websocket.
+
+        Args:
+            data (bytes): The command data to be sent over the websocket.
+
+        Raises:
+            UnicodeDecodeError: If the input data cannot be decoded
+            using UTF-8 encoding.
+
         """
         await self.write_to_websocket(data.decode("utf-8"))
 
     async def send_startup_command(self) -> None:
-        """Send startup command.
+        """Send startup command to initialize the game with Neuro.
 
-        This message should be sent as soon as the game starts, to let
-        Neuro know that the game is running.
+        This method sends the initial message to the Neuro system when
+        a game starts. It serves two critical purposes:
+        - Inform Neuro that the game is now running
+        - Clear and reset any previously registered actions
 
-        This message clears all previously registered actions for this game
-        and does initial setup, and as such should be the very first message
-        that you send.
+        Note:
+            This should be the very first message sent after game
+            initialization.
 
-        Could raise `UnicodeDecodeError` if data is unable to be decoded,
-        but probably won't happen.
+        Raises:
+            UnicodeDecodeError: If the command data cannot be decoded
+                (highly unlikely).
+            orjson.JSONEncodeError: If unable to encode the JSON data
+                for the startup command.
 
-        Raises `orjson.JSONEncodeError` if unable to encode json data.
+        Warning:
+            Sends a command that clears all previously registered actions
+            for this game, performing a complete action registry reset.
+
         """
         await self.send_command_data(command.startup_command(self.game_title))
 
     async def send_context(self, message: str, silent: bool = True) -> None:
-        """Send a message to add to Neuro's context.
+        """Send a contextual message to Neuro about the game state.
 
-        This can let Neuro know about something that is happening in
-        game.
+        Allows communication of game events or state information to Neuro
+        without necessarily requiring an immediate response.
 
-        Arguments:
-        - `message`:
-            A plaintext message that describes what is happening in the
-            game. **This information will be directly received by Neuro.**
-        - `silent`:
-            If True, the message will be added to Neuro's context without
-            prompting her to respond to it. If False, Neuro _might_
-            respond to the message directly, unless she is busy talking to
-            someone else or to chat.
+        Args:
+            message (str): A plaintext description of what is happening
+                in the game. **This information will be directly received
+                by Neuro.**
+            silent (bool, optional): Controls Neuro's response behaviour:
+                - If True (default): Message is added to context silently
+                  without prompting a response.
+                - If False: Neuro _might_ respond directly, unless she is
+                  busy talking to someone else or to chat.
 
-        Could raise `UnicodeDecodeError` if data is unable to be decoded,
-        but probably won't happen.
+        Raises:
+            UnicodeDecodeError: If the command data cannot be decoded
+                (highly unlikely).
+            orjson.JSONEncodeError: If unable to encode the JSON data
+                for the context command.
 
-        Raises `orjson.JSONEncodeError` if unable to encode json data.
+        Note:
+            This method provides a flexible way to keep Neuro informed
+            about game events without disrupting ongoing interactions.
 
         """
         await self.send_command_data(
@@ -180,21 +217,32 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         )
 
     async def register_actions(self, actions: list[command.Action]) -> None:
-        """Register actions with Neuro.
+        """Register a list of actions with Neuro.
 
-        This registers one or more actions for Neuro to use.
+        Validates and registers multiple actions for Neuro to use during
+        game interaction. This method performs two key operations:
+        - Validates each action's name and schema
+        - Sends the actions to Neuro for registration
 
-        actions:
-            A list of actions to be registered. If you try to register an
-            action that is already registered, it will be ignored.
+        Args:
+            actions (list[command.Action]): A list of actions to be registered.
+                If an action is already registered, it will be ignored.
 
-        Raises `ValueError` if action name has invalid characters or bad
-        schema key.
+        Raises:
+            ValueError: If any action:
+                - Contains invalid characters in its name
+                - Has an invalid schema key
+            UnicodeDecodeError: If the command data cannot be decoded
+                (highly unlikely).
+            orjson.JSONEncodeError: If unable to encode the JSON data
+                for the action registration.
 
-        Could raise `UnicodeDecodeError` if data is unable to be decoded,
-        but probably won't happen.
+        Note:
+            - Each action is validated before registration
+            - Previously registered actions with the same name will not
+              be overwritten
+            - The method maintains an internal registry of registered actions
 
-        Raises `orjson.JSONEncodeError` if unable to encode json data.
         """
         for action in actions:
             command.check_action(action)
@@ -208,19 +256,26 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         )
 
     async def unregister_actions(self, action_names: Sequence[str]) -> None:
-        """Unregister actions with Neuro.
+        """Unregister specified Neuro actions.
 
-        This unregisters one or more actions, preventing Neuro from
-        using them anymore.
+        Removes actions from both the internal registry and Neuro's
+        action set, preventing these actions from being used in future
+        interactions.
 
-        action_names:
-            The names of the actions to unregister. If you try to unregister
-            an action that isn't registered, there will be no problem.
+        Args:
+            action_names (Sequence[str]): The names of the actions to
+                unregister. Attempting to unregister an action that
+                isn't registered will not cause any errors.
 
-        Could raise `UnicodeDecodeError` if data is unable to be decoded,
-        but probably won't happen.
+        Raises:
+            UnicodeDecodeError: If the command data cannot be decoded
+                (highly unlikely).
+            orjson.JSONEncodeError: If unable to encode the JSON data
+                for the action unregistration.
 
-        Raises `orjson.JSONEncodeError` if unable to encode json data.
+        Note:
+            - No error is raised for non-existent actions
+
         """
         for action_name in action_names:
             self._currently_registered.pop(action_name, None)
@@ -235,47 +290,47 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         action_names: Sequence[str],
         ephemeral_context: bool = False,
     ) -> None:
-        """Send force action start to Neuro.
+        """Force Neuro to execute an action with specific context.
 
-        This message forces Neuro to execute one of the listed actions as
-        soon as possible. Note that this might take a bit if she is already
-        talking.
+        Sends a command to Neuro that compels her to choose and execute
+        one of the specified actions, providing detailed game state and
+        action instructions.
 
-        Neuro can only handle one action force at a time.
-        Sending an action force while another one is in progress will cause
-        problems!
+        Args:
+            state (str): An arbitrary string describing the current game
+                state. Can be plaintext, JSON, Markdown, or any other
+                format. **This information will be directly received by Neuro.**
+            query (str): A plaintext message instructing Neuro on her
+                current task (e.g., `"It is now your turn. Please perform
+                an action. If you want to use any items, you should use
+                them before picking up the shotgun."`). **This information
+                will be directly received by Neuro.**
+            action_names (Sequence[str]): Names of actions Neuro can choose
+                from during this force action.
+            ephemeral_context (bool, optional): Controls context persistence:
+                - If False (default): The `state` and `query` context will
+                  be remembered after actions force completion.
+                - If True: Neuro will only remember the context during the
+                  actions force.
 
-        Parameters
-        ----------
-        - `state`:
-            An arbitrary string that describes the current state of the
-            game. This can be plaintext, JSON, Markdown, or any other
-            format. **This information will be directly received by Neuro.**
-        - `query`:
-            A plaintext message that tells Neuro what she is currently
-            supposed to be doing (e.g. `"It is now your turn. Please perform
-            an action. If you want to use any items, you should use them
-            before picking up the shotgun."`). **This information will be
-            directly received by Neuro.**
-        - `ephemeral_context`:
-            If False, the context provided in the `state` and `query`
-            parameters will be remembered by Neuro after the actions force
-            is completed. If True, Neuro will only remember it for the
-            duration of the actions force.
-        - `action_names`:
-            The names of the actions that Neuro should choose from.
+        Raises:
+            ValueError: If any specified action name is not currently
+                registered.
+            UnicodeDecodeError: If the command data cannot be decoded
+                (highly unlikely).
+            orjson.JSONEncodeError: If unable to encode the JSON data
+                for the action force command.
 
-        Raises `ValueError` if any action name is not currently registered.
-
-        Could raise `UnicodeDecodeError` if data is unable to be decoded,
-        but probably won't happen.
-
-        Raises `orjson.JSONEncodeError` if unable to encode json data.
+        Warning:
+            - Neuro can only handle one action force at a time.
+            - Sending an action force while another is in progress
+              will cause problems.
 
         """
         for name in action_names:
             if name not in self.get_registered():
                 raise ValueError(f"{name!r} is not currently registered.")
+
         await self.send_command_data(
             command.actions_force_command(
                 self.game_title,
@@ -292,43 +347,44 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         success: bool,
         message: str | None = None,
     ) -> None:
-        """Send action result.
+        """Report the result of a Neuro-initiated action.
 
-        This message needs to be sent as soon as possible after an action is
-        validated, to allow Neuro to continue.
+        Communicates the outcome of an action to Neuro, allowing her to
+        proceed with her decision-making process. This method is critical
+        for maintaining the flow of game interactions.
 
-        Until you send an action result, Neuro will just be waiting for the
-        result of her action!
-        Please make sure to send this as soon as possible.
-        It should usually be sent after validating the action parameters,
-        before it is actually executed in-game
+        Args:
+            id_ (str): The unique identifier of the action being reported.
+                This ID is directly obtained from the original action message.
+            success (bool): Indicates the action's outcome:
+                - If True: Action was successfully executed.
+                - If False: Action failed. **Note:** If this action is part
+                  of an actions force, Neuro will immediately retry the
+                  entire actions force.
+            message (str, optional): A descriptive message about the action's
+                execution:
+                - For unsuccessful actions: Should be an error message.
+                - For successful actions: Can be empty or provide a _small_
+                  context about the action (e.g., `"Remember to not share
+                  this with anyone."`).
+                **This information will be directly received by Neuro.**
 
-        Parameters
-        ----------
-        - `id_`:
-            The id of the action that this result is for. This is grabbed
-            from the action message directly.
-        - `success`:
-            Whether or not the action was successful. _If this is `false`
-            and this action is part of an actions force, the whole actions
-            force will be immediately retried by Neuro._
-        - `message`:
-            A plaintext message that describes what happened when the action
-            was executed. If not successful, this should be an error
-            message. If successful, this can either be empty, or provide a
-            _small_ context to Neuro regarding the action she just took
-            (e.g. `"Remember to not share this with anyone."`). **This
-            information will be directly received by Neuro.**
+        Raises:
+            UnicodeDecodeError: If the command data cannot be decoded
+                (highly unlikely).
+            orjson.JSONEncodeError: If unable to encode the JSON data
+                for the action result.
 
-        Since setting `success` to `false` will retry the action force if
-        there was one, if the action was not successful but you don't want
-        it to be retried, you should set `success` to `true` and provide an
-        error message in the `message` field.
+        Warning:
+            - Until an action result is sent, Neuro will be waiting
+              and unable to proceed.
+            - Send this method call as soon as possible after action
+              validation, preferably before in-game execution.
 
-        Could raise `UnicodeDecodeError` if data is unable to be decoded,
-        but probably won't happen.
-
-        Raises `orjson.JSONEncodeError` if unable to encode json data.
+        Note:
+            To prevent automatic retrying of a failed action:
+            - Set `success` to True
+            - Provide an error message in the `message` field
 
         """
         await self.send_command_data(
@@ -343,9 +399,9 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
     async def send_shutdown_ready(self) -> None:
         """Send shutdown ready response.
 
-        This is part of the game automation API, which will only be used for
-        games that Neuro can launch by herself. As such, most games will not
-        need to use implement this.
+        This is part of the game automation API, which will only be used
+        for games that Neuro can launch by herself. As such, most games
+        will not need to implement this.
 
         This should be sent as a response to a graceful or an imminent
         shutdown request, after progress has been saved. After this is
@@ -353,10 +409,11 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         process, so to reiterate you must definitely ensure that
         progress has already been saved.
 
-        Could raise `UnicodeDecodeError` if data is unable to be decoded,
-        but probably won't happen.
+        Raises:
+            UnicodeDecodeError: If data is unable to be decoded
+                (though this is unlikely to happen).
+            orjson.JSONEncodeError: If unable to encode JSON data.
 
-        Raises `orjson.JSONEncodeError` if unable to encode json data.
         """
         await self.send_command_data(
             command.shutdown_ready_command(self.game_title),
@@ -365,14 +422,21 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
     async def read_raw_message(
         self,
     ) -> tuple[str, dict[str, object] | None]:
-        """Return command name and associated data from Neuro.
+        """Read a command and its associated data from Neuro websocket connection.
 
-        Will not return until message read from websocket.
+        Waits and reads a message from the websocket. The method will not
+        return until a message is successfully read.
 
-        Raises `orjson.JSONDecodeError` on invalid message.
+        Returns:
+            tuple[str, dict[str, object] | None]: A tuple containing:
+                - The command name as a string
+                - Associated data as a dictionary or None
 
-        Raises `AssertionError` if received types in json message are not
-        expected types.
+        Raises:
+            orjson.JSONDecodeError: If the received message is invalid JSON.
+            AssertionError: If the received JSON message contains
+                unexpected types for command or data.
+
         """
         content = await self.read_from_websocket()
         try:
@@ -390,7 +454,17 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
 
     @abstractmethod
     async def handle_action(self, action: NeuroAction) -> None:
-        """Handle an Action from Neuro."""
+        """Handle an Action request from Neuro.
+
+        Args:
+            action (NeuroAction): Parsed Neuro action request data.
+
+        Warning:
+            Should call ``send_action_result`` with this action's id as
+            soon as scheduling action processing is complete, or else
+            Neuro will be stuck frozen, waiting.
+
+        """
 
     async def handle_graceful_shutdown_request(
         self,
@@ -410,22 +484,22 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         graceful shutdown point is reached, you should save the game and
         quit to main menu, then send back a shutdown ready message.
 
-        Important:
-        Please don't actually close the game, just quit to main menu.
-        Neuro will close the game herself.
+        Warning:
+            Please don't actually close the game, just quit to main
+            menu. Neuro will close the game herself.
 
-        Arguments:
-        wants_shutdown:
-            Whether the game should shutdown at the next graceful
-            shutdown point. True means shutdown is requested, False
-            means to cancel the previous shutdown request.
+        Note:
+            Base implementation sends that shutdown is ready.
 
-        Default implementation sends that shutdown is ready.
+        Args:
+            wants_shutdown (bool): Whether the game should shutdown at
+                the next graceful shutdown point.
+                - If True: Shutdown is requested
+                - If False: Cancel the prior shutdown request
 
         """
         if wants_shutdown:
             await self.send_shutdown_ready()
-            return
 
     async def handle_immediate_shutdown(self) -> None:
         """Handle immediate shutdown alert from Neuro.
@@ -439,12 +513,13 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         progress as possible. After you have saved, you can send back a
         shutdown ready message.
 
-        Important:
-        Please don't actually close the game, just save the
-        current progress that can be saved. Neuro will close the game
-        herself.
+        Warning:
+            Please don't actually close the game, just save the current
+            progress that can be saved. Neuro will close the game
+            herself.
 
-        Default implementation sends that shutdown is ready.
+        Note:
+            Base implementation sends that shutdown is ready.
 
         """
         await self.send_shutdown_ready()
@@ -456,29 +531,43 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
     ) -> None:  # pragma: nocover
         """Handle unknown command from Neuro.
 
-        On default, just prints.
+        Args:
+            command (str): Unhandled command name
+            data (dict[str, object] | None):
+                Data associated with unknown command.
+
+        Note:
+            Base implementation just prints an error message.
+
         """
         print(
             f"[neuro_api.api] Received unknown command {command!r} {data = }",
         )
 
     async def read_message(self) -> None:
-        """Read message from Neuro.
+        """Read message from Neuro websocket.
+
+        You should call this function in a loop as long as the websocket
+        is still connected.
 
         Automatically handles `actions/reregister_all` commands.
 
-        Calls handle_graceful_shutdown_request and handle_immediate_shutdown
-        for graceful and immediate shutdown requests respectively.
+        Calls ``handle_graceful_shutdown_request`` and
+        ``handle_immediate_shutdown`` for graceful and immediate
+        shutdown requests respectively.
 
-        Calls handle_action for `action` commands.
+        Calls ``handle_action`` for `action` commands.
 
-        Calls handle_unknown_command for any other command.
+        Calls ``handle_unknown_command`` for any other command.
 
-        Raises ValueError if extra keys in action command data or
-        missing keys in action command data.
-        Raises TypeError on action command key type mismatch.
+        Raises:
+            ValueError: If extra keys in action command data or
+                missing keys in action command data.
+            TypeError: If action command key type mismatch
 
-        Does not catch any exceptions `read_raw_message` raises.
+        Note:
+            Does not catch any exceptions ``read_raw_message`` raises.
+
         """
         command_type, data = await self.read_raw_message()
         if command_type == "action":
