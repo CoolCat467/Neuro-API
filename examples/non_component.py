@@ -34,8 +34,10 @@ __license__ = "MIT License"
 import os
 import sys
 import traceback
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final
 
+# neuro_api uses orjson, so no extra dependencies
+import orjson
 import trio
 import trio_websocket
 
@@ -95,12 +97,34 @@ class API(TrioNeuroAPI):
         """Handle an Action from Neuro."""
         print(f"INFO: Received {action = }")
 
+        data: Any | None = None
+        if action.data is not None:
+            try:
+                data = orjson.loads(action.data)
+            except orjson.JSONDecodeError as exc:
+                message = f"Failed to read response: {exc}"
+                print(f"INFO: {message}")
+                await self.send_action_result(action.id_, False, message)
+                return
+        print(f"INFO: Action {data = }")
+
+        # Would suggest doing something like this:
+        # In __init__:
+        # self.action_map: dict[str, tuple[object, Callable[[NeuroAction], tuple[bool, str | None]]]] = {}
+        # In class body somewhere:
+        # @staticmethod
+        # def invalid_action_handler(action: NeuroAction) -> tuple[bool, str | None]:
+        #     return True, f"Action {action.name!r} is not currently implemented/does not exist."
+        # schema, action_handler = self.action_map.get(action.name, ({}, self.invalid_action_handler))
+        # # do schema validation things, returning False and error message if nonmatch
+        # await self.send_action_result(action.id_, *action_handler(action))
+
         success = True
         message = f"Action {action.name!r} is not currently implemented."
         print(f"INFO: {message}")
         await self.send_action_result(action.id_, success, message)
 
-        # Close game
+        # Close game (demo purposes, likely wouldn't do this in practice)
         self.running = False
 
 
