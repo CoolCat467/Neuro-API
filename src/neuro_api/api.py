@@ -484,18 +484,18 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         graceful shutdown point is reached, you should save the game and
         quit to main menu, then send back a shutdown ready message.
 
+        Args:
+            wants_shutdown (bool): Whether the game should shutdown at
+                the next graceful shutdown point.
+                - If True: Shutdown is requested
+                - If False: Cancel the prior shutdown request
+
         Warning:
             Please don't actually close the game, just quit to main
             menu. Neuro will close the game herself.
 
         Note:
             Base implementation sends that shutdown is ready.
-
-        Args:
-            wants_shutdown (bool): Whether the game should shutdown at
-                the next graceful shutdown point.
-                - If True: Shutdown is requested
-                - If False: Cancel the prior shutdown request
 
         """
         if wants_shutdown:
