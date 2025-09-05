@@ -11,8 +11,10 @@ Classes
    :members:
    :undoc-members:
    :show-inheritance:
+   :special-members: __init__
 
 .. autoclass:: neuro_api.trio_ws.TrioNeuroAPIComponent
    :members:
    :undoc-members:
    :show-inheritance:
+   :special-members: __init__
