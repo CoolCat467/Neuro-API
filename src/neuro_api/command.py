@@ -634,10 +634,22 @@ def convert_parameterized_generic_nonunion(
 
 def convert_paramaterized_generic_union_items(
     generic: UnionType | T,
-) -> T | type | tuple[type, ...]:
+) -> T | tuple[type, ...]:
+    """Return tuple of based types from union of paramaterized generic types.
+
+    Args:
+        generic (UnionType | T): The generic type or alias to be
+            converted. Can be a UnionType or any other type.
+
+    Returns:
+        T | tuple[type, ...]:
+            - For UnionType types, returns items as a tuple of types.
+            - For other types, returns the input type as-is.
+
+    """
     if isinstance(generic, UnionType):
         items = generic.__args__
-        return tuple(map(convert_parameterized_generic, items))
+        return tuple(map(convert_parameterized_generic_nonunion, items))
     return generic
 
 
@@ -651,10 +663,11 @@ def convert_parameterized_generic(
 
     Args:
         generic (GenericAlias | UnionType | T): The generic type or
-            alias to be converted. Can be a GenericAlias or any other type.
+            alias to be converted. Can be a GenericAlias, UnionType, or
+            any other type.
 
     Returns:
-        T | type: The origin type of the input generic alias.
+        T | type | tuple[type, ...]: The origin type of the input generic alias.
             - For GenericAlias, returns the original type.
             - For NotRequired types, returns the wrapped type.
             - For UnionType types, returns items as a tuple of types.
