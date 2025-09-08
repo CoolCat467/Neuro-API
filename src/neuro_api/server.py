@@ -76,14 +76,14 @@ class ActionSchema(TypedDict):
     Attributes:
         name (str): The name of the action.
         description (str): A description of the action.
-        schema (NotRequired[dict[str, object] | None], optional):
-            Optional schema for the action. Defaults to None.
+        schema (NotRequired[dict[str, object]]):
+            Optional schema for the action.
 
     """
 
     name: str
     description: str
-    schema: NotRequired[dict[str, object] | None]
+    schema: NotRequired[dict[str, object]]
 
 
 class RegisterActionsData(TypedDict):
@@ -133,14 +133,14 @@ class ActionResultData(TypedDict):
     Attributes:
         id (str): Unique identifier for the action result.
         success (bool): Indicates whether the action was successful.
-        message (NotRequired[str | None], optional):
+        message (NotRequired[str]):
             Optional message providing additional details. Defaults to None.
 
     """
 
     id: str
     success: bool
-    message: NotRequired[str | None]
+    message: NotRequired[str]
 
 
 def deserialize_actions(data: dict[str, list[object]]) -> list[Action]:
