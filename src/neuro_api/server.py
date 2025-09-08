@@ -30,7 +30,7 @@ import traceback
 import weakref
 from abc import ABCMeta, abstractmethod
 from functools import partial
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 from uuid import UUID
 
 import trio
@@ -143,7 +143,7 @@ class ActionResultData(TypedDict):
     message: NotRequired[str | None]
 
 
-def deserialize_actions(data: dict[str, object]) -> list[Action]:
+def deserialize_actions(data: dict[str, list[object]]) -> list[Action]:
     """Deserialize a dictionary of actions into a list of Action objects.
 
     Args:
@@ -566,7 +566,10 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
                 raise ValueError(
                     f"`data` attribute must be set for {command_type!r} commands",
                 )
-            actions = deserialize_actions(data)
+            # Cast is fine because deserialize_actions will check structure.
+            actions = deserialize_actions(
+                cast("dict[str, list[object]]", data),
+            )
             await self.handle_actions_register(game_title, actions)
         elif command_type == "actions/unregister":
             if data is None:
