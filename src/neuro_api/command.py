@@ -689,6 +689,7 @@ def convert_parameterized_generic(
         )
     )
     print(f"[convert_parameterized_generic] {result = }")
+    print(f"[convert_parameterized_generic] {type(result) = }")
     return result
 
 
