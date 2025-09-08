@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 if sys.version_info >= (3, 10):
     from types import UnionType
 else:
-    from typing import Union as UnionType
+    from typing_extensions import _UnionGenericAlias as UnionType
 
 T = TypeVar("T")
 
@@ -652,6 +652,7 @@ def convert_paramaterized_generic_union_items(
             - For other types, returns the input type as-is.
 
     """
+    print(f"{type(generic) = }")
     if isinstance(generic, UnionType):
         items = generic.__args__
         return tuple(map(convert_parameterized_generic_nonunion, items))
