@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 if sys.version_info >= (3, 10):
     from types import UnionType
 else:
-    from typing_extensions import _UnionGenericAlias as UnionType
+    from typing import _UnionGenericAlias as UnionType
 
 T = TypeVar("T")
 
