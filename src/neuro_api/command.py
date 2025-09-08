@@ -27,7 +27,7 @@ __license__ = "GNU Lesser General Public License Version 3"
 
 
 import sys
-from types import GenericAlias, UnionType
+from types import GenericAlias
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -44,6 +44,11 @@ from typing_extensions import NotRequired, is_typeddict
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+
+if sys.version_info >= (3, 10):
+    from types import UnionType
+else:
+    from typing import Union as UnionType
 
 T = TypeVar("T")
 
