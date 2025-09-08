@@ -23,17 +23,15 @@ from __future__ import annotations
 
 __title__ = "api"
 __author__ = "CoolCat467"
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __license__ = "GNU Lesser General Public License Version 3"
 
 
-import sys
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 from typing import TYPE_CHECKING, NamedTuple
 
-import orjson
-
-from neuro_api import command
+from neuro_api import _deprecate, command
+from neuro_api.client import AbstractNeuroAPIClient
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -61,7 +59,7 @@ class NeuroAction(NamedTuple):
     data: str | None
 
 
-class AbstractNeuroAPI(metaclass=ABCMeta):
+class AbstractNeuroAPI(AbstractNeuroAPIClient):
     """Abstract base class for the Neuro Game Interaction API.
 
     Provides a foundational interface for managing game actions and
@@ -115,50 +113,6 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
 
         """
         return tuple(self._currently_registered)
-
-    @abstractmethod
-    async def write_to_websocket(self, data: str) -> None:
-        """Abstract method to write a message to the websocket.
-
-        This method must be implemented by subclasses to define
-        the specific mechanism for sending data over a websocket.
-
-        Args:
-            data (str): The message to be sent over the websocket.
-
-        """
-
-    @abstractmethod
-    async def read_from_websocket(
-        self,
-    ) -> bytes | bytearray | memoryview | str:
-        """Abstract method to read a message from the websocket.
-
-        This method must be implemented by subclasses to define
-        the specific mechanism for receiving data from a websocket.
-
-        Returns:
-            bytes | bytearray | memoryview | str: The message
-            received from the websocket, supporting anything
-            ``orjson.loads`` can handle.
-
-        """
-
-    async def send_command_data(self, data: bytes) -> None:
-        """Send command data over the websocket.
-
-        Converts the input bytes to a UTF-8 encoded string and
-        writes it to the websocket.
-
-        Args:
-            data (bytes): The command data to be sent over the websocket.
-
-        Raises:
-            UnicodeDecodeError: If the input data cannot be decoded
-            using UTF-8 encoding.
-
-        """
-        await self.write_to_websocket(data.decode("utf-8"))
 
     async def send_startup_command(self) -> None:
         """Send startup command to initialize the game with Neuro.
@@ -419,39 +373,6 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
             command.shutdown_ready_command(self.game_title),
         )
 
-    async def read_raw_message(
-        self,
-    ) -> tuple[str, dict[str, object] | None]:
-        """Read a command and its associated data from Neuro websocket connection.
-
-        Waits and reads a message from the websocket. The method will not
-        return until a message is successfully read.
-
-        Returns:
-            tuple[str, dict[str, object] | None]: A tuple containing:
-                - The command name as a string
-                - Associated data as a dictionary or None
-
-        Raises:
-            orjson.JSONDecodeError: If the received message is invalid JSON.
-            AssertionError: If the received JSON message contains
-                unexpected types for command or data.
-
-        """
-        content = await self.read_from_websocket()
-        try:
-            message = orjson.loads(content)
-        except orjson.JSONDecodeError as exc:
-            if sys.version_info >= (3, 11):
-                exc.add_note(f"{content = }")
-            raise
-        command = message["command"]
-        assert isinstance(command, str)
-        raw_data = message.get("data")
-        assert isinstance(raw_data, dict) or raw_data is None
-        data: dict[str, object] | None = raw_data
-        return command, data
-
     @abstractmethod
     async def handle_action(self, action: NeuroAction) -> None:
         """Handle an Action request from Neuro.
@@ -524,25 +445,12 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
         """
         await self.send_shutdown_ready()
 
-    async def handle_unknown_command(
-        self,
-        command: str,
-        data: dict[str, object] | None,
-    ) -> None:  # pragma: nocover
-        """Handle unknown command from Neuro.
-
-        Args:
-            command (str): Unhandled command name
-            data (dict[str, object] | None):
-                Data associated with unknown command.
-
-        Note:
-            Base implementation just prints an error message.
-
-        """
-        print(
-            f"[neuro_api.api] Received unknown command {command!r} {data = }",
-        )
+    read_raw_message = _deprecate.deprecated_async_alias(
+        "read_raw_message",
+        AbstractNeuroAPIClient.read_raw_server_message,
+        "2.1.0",
+        issue=None,
+    )
 
     async def read_message(self) -> None:
         """Read message from Neuro websocket.
@@ -566,10 +474,11 @@ class AbstractNeuroAPI(metaclass=ABCMeta):
             TypeError: If action command key type mismatch
 
         Note:
-            Does not catch any exceptions ``read_raw_message`` raises.
+            Does not catch any exceptions ``read_raw_server_message`` raises.
 
         """
-        command_type, data = await self.read_raw_message()
+        # Read message from server
+        command_type, data = await self.read_raw_server_message()
         if command_type == "action":
             assert data is not None
             action_data = command.check_typed_dict(

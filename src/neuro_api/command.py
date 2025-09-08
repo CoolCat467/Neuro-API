@@ -45,6 +45,11 @@ from typing_extensions import NotRequired, is_typeddict
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
+if sys.version_info >= (3, 10):
+    from types import UnionType
+else:
+    from typing import _UnionGenericAlias as UnionType
+
 T = TypeVar("T")
 
 ACTION_NAME_ALLOWED_CHARS: Final = frozenset(
@@ -168,17 +173,19 @@ def check_invalid_keys_recursive(
 
 def format_command(
     command: str,
-    game: str,
+    game: str | None = None,
     data: Mapping[str, object] | None = None,
 ) -> bytes:
     """Return json bytes blob from command details.
 
     Args:
         command (str): The websocket command.
-        game (str): The game name. This is used to identify the game.
-            It should _always_ be the same and should not change.
-            You should use the game's display name, including any
-            spaces and symbols (e.g. `"Buckshot Roulette"`).
+        game (str | None): The game name. This is used to identify the
+            game. It should _always_ be the same and should not change.
+            You should use the game's display name, including any spaces
+            and symbols (e.g. `"Buckshot Roulette"`).
+            MUST not be present for server messages.
+            Defaults to None.
         data (Mapping[str, object], optional): The command data.
             This object is different depending on which command you are
             sending/receiving, and some commands may not have any data,
@@ -191,8 +198,9 @@ def format_command(
     """
     payload: dict[str, Any] = {
         "command": command,
-        "game": game,
     }
+    if game is not None:
+        payload["game"] = game
     if data is not None:
         payload["data"] = data
     try:
@@ -205,6 +213,8 @@ def format_command(
 
 def startup_command(game: str) -> bytes:
     """Return formatted startup command.
+
+    Client to Server command.
 
     This message should be sent as soon as the game starts, to let
     Neuro know that the game is running.
@@ -229,6 +239,8 @@ def context_command(
     silent: bool = True,
 ) -> bytes:
     """Return formatted context command.
+
+    Client to Server command.
 
     This message can be sent to let Neuro know about something that is
     happening in game.
@@ -261,6 +273,8 @@ def actions_register_command(
 ) -> bytes:
     """Return formatted action/register command.
 
+    Client to Server command.
+
     This message registers one or more actions for Neuro to use.
 
     Args:
@@ -290,6 +304,7 @@ def actions_unregister_command(
 ) -> bytes:
     """Return formatted action/unregister command.
 
+    Client to Server command.
     This message unregisters one or more actions, preventing Neuro from
     using them anymore.
 
@@ -323,6 +338,8 @@ def actions_force_command(
     ephemeral_context: bool = False,
 ) -> bytes:
     """Return formatted actions/force command.
+
+    Client to Server command.
 
     This message forces Neuro to execute one of the listed actions as
     soon as possible. Note that this might take a bit if she is already
@@ -383,6 +400,8 @@ def actions_result_command(
 ) -> bytes:
     """Return formatted action/result command.
 
+    Client to Server command.
+
     This message needs to be sent as soon as possible after an action is
     validated, to allow Neuro to continue.
 
@@ -437,6 +456,8 @@ def actions_result_command(
 def shutdown_ready_command(game: str) -> bytes:
     """Return formatted shutdown/ready command.
 
+    Client to Server command.
+
     This is part of the game automation API, which will only be used for
     games that Neuro can launch by herself. As such, most games will not
     need to implement this.
@@ -465,7 +486,126 @@ def shutdown_ready_command(game: str) -> bytes:
     )
 
 
-def convert_parameterized_generic(generic: GenericAlias | T) -> T | type:
+def action_command(
+    id_: str,
+    name: str,
+    data: str | None = None,
+) -> bytes:
+    """Return formatted action command.
+
+    Server to Client command.
+
+    Attempt to execute a registered action.
+
+    Args:
+        id_ (str): A unique id for the action.
+        name (str): The name of the action that Neuro is trying to execute.
+        data (str): JSON-stringified data for the action. This
+            **_should_** be an object that matches the JSON schema
+            provided when registering the action. If schema was not
+            provided, this should be `None`.
+
+    Returns:
+        bytes: A formatted command to attempt to execute the registered
+            action.
+
+    """
+    command_data: dict[str, str] = {
+        "id": id_,
+        "name": name,
+    }
+    if data is not None:
+        command_data["data"] = data
+    return format_command("action", data=command_data)
+
+
+def reregister_all_command() -> bytes:
+    """Return formatted actions/reregister_all command.
+
+    Server to Client command.
+
+    This signals to the game to unregister all actions and reregister them.
+
+    Returns:
+        bytes: A formatted command to unregister all actions and
+            reregister them.
+
+    Warning:
+        This command is part of the proposed API and is not officially
+        supported yet. Some clients may not support it.
+
+    Reference:
+        Specification details:
+        https://github.com/VedalAI/neuro-game-sdk/blob/main/API/PROPOSALS.md#reregister-all-actions
+
+    """
+    return format_command("actions/reregister_all")
+
+
+def shutdown_graceful_command(wants_shutdown: bool) -> bytes:
+    """Return formatted shutdown/graceful command.
+
+    Server to Client command.
+
+    This message will be sent when Neuro decides to stop playing a game,
+    or upon manual intervention from the dashboard. Signals game to save
+    and quit to main menu and send back a shutdown ready message.
+
+    Args:
+        wants_shutdown (bool): Whether the game should shutdown at the
+            next graceful shutdown point. `True` means shutdown is
+            requested, `False` means to cancel the previous shutdown
+            request.
+
+    Returns:
+        bytes: A formatted command to request or cancel a graceful
+            shutdown.
+
+    Warning:
+        This is part of the game automation API, which will only be used
+        for games that Neuro can launch by herself. Most games will not
+        support it this command.
+
+    Reference:
+        Specification details:
+        https://github.com/VedalAI/neuro-sdk/blob/main/API/PROPOSALS.md#graceful-shutdown
+
+    """
+    return format_command(
+        "shutdown/graceful",
+        data={"wants_shutdown": wants_shutdown},
+    )
+
+
+def shutdown_immediate_command() -> bytes:
+    """Return formatted shutdown/immediate command.
+
+    Server to Client command.
+
+    This signals to the game that it needs to be shutdown immediately
+    and needs to send back a shutdown ready message as soon as the game
+    has saved.
+
+    Returns:
+        bytes: A formatted command to inform clients about pending
+            immediate shutdown.
+
+    Warning:
+        This is part of the game automation API, which will only be used
+        for games that Neuro can launch by herself. Most games will not
+        support it this command.
+
+    Reference:
+        Specification details:
+        https://github.com/VedalAI/neuro-sdk/blob/main/API/PROPOSALS.md#immediate-shutdown
+
+    """
+    return format_command("shutdown/immediate")
+
+
+def convert_parameterized_generic_nonunion(
+    generic: GenericAlias | T,
+) -> T | type:
     """Return origin type of aliases.
 
     This function extracts the base type from various generic type aliases,
@@ -494,7 +634,72 @@ def convert_parameterized_generic(generic: GenericAlias | T) -> T | type:
         "typing_extensions.NotRequired[",
     ):  # pragma: nocover
         return generic.__args__[0]  # type: ignore
+    if repr(generic).startswith("typing.Optional[") or repr(
+        generic,
+    ).startswith(
+        "typing_extensions.Optional[",
+    ):  # pragma: nocover
+        return generic.__args__[0]  # type: ignore
     return generic
+
+
+def convert_paramaterized_generic_union_items(
+    generic: UnionType | T,
+) -> T | tuple[type, ...]:
+    """Return tuple of based types from union of paramaterized generic types.
+
+    Args:
+        generic (UnionType | Union | T): The generic type or alias to be
+            converted. Can be a UnionType or any other type.
+
+    Returns:
+        T | tuple[type, ...]:
+            - For UnionType types, returns items as a tuple of types.
+            - For other types, returns the input type as-is.
+
+    """
+    if isinstance(generic, UnionType):
+        items = generic.__args__
+        return tuple(map(convert_parameterized_generic_nonunion, items))
+    return generic
+
+
+def convert_parameterized_generic(
+    generic: GenericAlias | UnionType | T,
+) -> T | type | tuple[type, ...]:
+    """Return origin type of parameterized generics.
+
+    This function extracts the base type from various generic type aliases,
+    handling different type representations and special cases.
+
+    Args:
+        generic (GenericAlias | UnionType | T): The generic type or
+            alias to be converted. Can be a GenericAlias, UnionType, or
+            any other type.
+
+    Returns:
+        T | type | tuple[type, ...]: The origin type of the input generic alias.
+            - For GenericAlias, returns the original type.
+            - For NotRequired types, returns the wrapped type.
+            - For UnionType types, returns items as a tuple of types.
+            - For other types, returns the input type as-is.
+
+    Note:
+        This function handles special cases like NotRequired from typing
+        and typing_extensions modules.
+
+    """
+    result: T | type | tuple[type, ...] = (
+        convert_paramaterized_generic_union_items(
+            convert_parameterized_generic_nonunion(generic),
+        )
+    )
+    print(f"[convert_parameterized_generic] {result = }")
+    print(f"[convert_parameterized_generic] {type(result) = }")
+    if sys.version_info < (3, 11):
+        if type(result) is GenericAlias:
+            return convert_parameterized_generic(result)
+    return result
 
 
 def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
@@ -538,7 +743,15 @@ def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
         extra_str = ", ".join(map(repr, extra))
         raise ValueError(f"Following extra keys were found: {extra_str}")
 
-    full_annotations = get_type_hints(typed_dict, include_extras=True)
+    try:
+        full_annotations = get_type_hints(typed_dict, include_extras=True)
+    except NameError as exc:
+        if sys.version_info >= (3, 11):
+            exc.add_note(f"{typed_dict = }")
+            exc.add_note("Very likely you forgot to import something")
+        else:
+            print(f"{typed_dict = }", file=sys.stderr)
+        raise
 
     optional = {
         k
@@ -555,26 +768,39 @@ def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
     for key in required:
         if key not in data:
             raise ValueError(f"{key!r} is missing (type {annotations[key]!r})")
-        if not isinstance(
-            data[key],
-            convert_parameterized_generic(annotations[key]),
-        ):
+        try:
+            isinstance_result = isinstance(
+                data[key],
+                convert_parameterized_generic(annotations[key]),
+            )
+        except TypeError as exc:
+            if sys.version_info >= (3, 11):
+                exc.add_note(f"{annotations[key] = }")
+            else:
+                print(f"{annotations[key] = }", file=sys.stderr)
+            raise
+        if not isinstance_result:
             raise TypeError(
                 f"{data[key]!r} (key {key!r}) is not instance of {annotations[key]!r}",
             )
 
     for key in optional:
-        if (
-            key in data
-            and data is not None
-            and not isinstance(
-                data[key],
-                convert_parameterized_generic(annotations[key]),
-            )
-        ):
-            raise TypeError(
-                f"{data[key]!r} (key {key!r}) is not instance of {annotations[key]!r}",
-            )
+        if key in data and data is not None:
+            try:
+                isinstance_result = isinstance(
+                    data[key],
+                    convert_parameterized_generic(annotations[key]),
+                )
+            except TypeError as exc:
+                if sys.version_info >= (3, 11):
+                    exc.add_note(f"{annotations[key] = }")
+                else:
+                    print(f"{annotations[key] = }", file=sys.stderr)
+                raise
+            if not isinstance_result:
+                raise TypeError(
+                    f"{data[key]!r} (key {key!r}) is not instance of {annotations[key]!r}",
+                )
 
     return typed_dict(data)  # type: ignore[call-arg]
 

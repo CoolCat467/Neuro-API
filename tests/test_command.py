@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import TypedDict
+import sys
+from typing import TYPE_CHECKING, TypedDict
 
 import pytest
+from typing_extensions import NotRequired
 
 from neuro_api.command import (
     Action,
     IncomingActionMessageSchema,
+    action_command,
     actions_force_command,
     actions_register_command,
     actions_result_command,
@@ -15,10 +18,19 @@ from neuro_api.command import (
     check_invalid_keys_recursive,
     check_typed_dict,
     context_command,
+    convert_paramaterized_generic_union_items,
+    convert_parameterized_generic,
+    convert_parameterized_generic_nonunion,
     format_command,
+    reregister_all_command,
+    shutdown_graceful_command,
+    shutdown_immediate_command,
     shutdown_ready_command,
     startup_command,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 def test_check_invalid_keys_recursive() -> None:
@@ -311,3 +323,261 @@ def test_check_typed_dict_parameterized_generic() -> None:
     }
 
     assert check_typed_dict(data, Data) == data
+
+
+# ... (keep all existing tests) ...
+
+
+# NEW TESTS - Add these to improve coverage:
+
+
+def test_format_command_no_game() -> None:
+    """Test format_command without game parameter."""
+    command = "test_command"
+    data = {"key": "value"}
+
+    expected_output = b'{"command":"test_command","data":{"key":"value"}}'
+    assert format_command(command, data=data) == expected_output
+
+
+def test_format_command_no_data() -> None:
+    """Test format_command without data parameter."""
+    command = "test_command"
+    game = "Test Game"
+
+    expected_output = b'{"command":"test_command","game":"Test Game"}'
+    assert format_command(command, game) == expected_output
+
+
+def test_format_command_minimal() -> None:
+    """Test format_command with only command parameter."""
+    command = "test_command"
+
+    expected_output = b'{"command":"test_command"}'
+    assert format_command(command) == expected_output
+
+
+def test_format_command_error_with_note() -> None:
+    """Test format_command error handling with note (Python 3.11+)."""
+    if sys.version_info >= (3, 11):
+        command = {"invalid"}  # Invalid type
+        game = "Test Game"
+
+        with pytest.raises(TypeError) as exc_info:
+            format_command(command, game)  # type: ignore[arg-type]
+
+        # Check that the note was added
+        assert hasattr(exc_info.value, "__notes__")
+
+
+def test_context_command_not_silent() -> None:
+    """Test context_command with silent=False."""
+    game = "Test Game"
+    message = "This is a test message."
+    silent = False
+
+    expected_output = b'{"command":"context","game":"Test Game","data":{"message":"This is a test message.","silent":false}}'
+    assert context_command(game, message, silent) == expected_output
+
+
+def test_actions_register_command_empty_assertion() -> None:
+    """Test actions_register_command with empty actions list."""
+    game = "Test Game"
+    actions: list[Action] = []
+
+    with pytest.raises(
+        AssertionError,
+        match="Must register at least one action",
+    ):
+        actions_register_command(game, actions)
+
+
+def test_actions_unregister_command_empty_assertion() -> None:
+    """Test actions_unregister_command with empty action_names."""
+    game = "Test Game"
+    action_names: Sequence[str] = []
+
+    with pytest.raises(
+        AssertionError,
+        match="Must unregister at least one action",
+    ):
+        actions_unregister_command(game, action_names)
+
+
+def test_actions_force_command_empty_assertion() -> None:
+    """Test actions_force_command with empty action_names."""
+    game = "Test Game"
+    state = "Game state"
+    query = "Please act"
+    action_names: Sequence[str] = []
+
+    with pytest.raises(
+        AssertionError,
+        match="Must force at least one action name",
+    ):
+        actions_force_command(game, state, query, action_names)
+
+
+# NEW SERVER-TO-CLIENT COMMANDS:
+
+
+def test_action_command() -> None:
+    """Test server-to-client action command."""
+    id_ = "12345"
+    name = "test_action"
+    data = '{"key": "value"}'
+
+    expected_output = b'{"command":"action","data":{"id":"12345","name":"test_action","data":"{\\"key\\": \\"value\\"}"}}'
+    assert action_command(id_, name, data) == expected_output
+
+
+def test_action_command_no_data() -> None:
+    """Test action command without data."""
+    id_ = "12345"
+    name = "test_action"
+
+    expected_output = (
+        b'{"command":"action","data":{"id":"12345","name":"test_action"}}'
+    )
+    assert action_command(id_, name) == expected_output
+
+
+def test_reregister_all_command() -> None:
+    """Test reregister all command."""
+    expected_output = b'{"command":"actions/reregister_all"}'
+    assert reregister_all_command() == expected_output
+
+
+def test_shutdown_graceful_command() -> None:
+    """Test graceful shutdown command."""
+    expected_output = (
+        b'{"command":"shutdown/graceful","data":{"wants_shutdown":true}}'
+    )
+    assert shutdown_graceful_command(True) == expected_output
+
+    expected_output = (
+        b'{"command":"shutdown/graceful","data":{"wants_shutdown":false}}'
+    )
+    assert shutdown_graceful_command(False) == expected_output
+
+
+def test_shutdown_immediate_command() -> None:
+    """Test immediate shutdown command."""
+    expected_output = b'{"command":"shutdown/immediate"}'
+    assert shutdown_immediate_command() == expected_output
+
+
+# TYPE CONVERSION TESTS:
+
+
+def test_convert_parameterized_generic_nonunion_generic_alias() -> None:
+    """Test convert_parameterized_generic_nonunion with GenericAlias."""
+    generic = list[str]
+    result = convert_parameterized_generic_nonunion(generic)
+    assert result is list
+
+
+def test_convert_parameterized_generic_nonunion_regular_type() -> None:
+    """Test convert_parameterized_generic_nonunion with regular type."""
+    result = convert_parameterized_generic_nonunion(str)
+    assert result is str
+
+
+def test_convert_paramaterized_generic_union_items_union() -> None:
+    """Test convert_paramaterized_generic_union_items with UnionType."""
+    if sys.version_info >= (3, 10):
+        union = str | int
+        result = convert_paramaterized_generic_union_items(union)
+        assert result == (str, int)
+
+
+def test_convert_paramaterized_generic_union_items_regular_type() -> None:
+    """Test convert_paramaterized_generic_union_items with regular type."""
+    result = convert_paramaterized_generic_union_items(str)
+    assert result is str
+
+
+def test_convert_parameterized_generic() -> None:
+    """Test convert_parameterized_generic with various types."""
+    # Test with regular type
+    assert convert_parameterized_generic(str) is str
+
+    # Test with GenericAlias
+    assert convert_parameterized_generic(list[str]) is list
+
+    # Test with UnionType (if available)
+    if sys.version_info >= (3, 10):
+        result = convert_parameterized_generic(str | int)
+        assert result == (str, int)
+
+
+# NEW TESTS FOR BETTER COVERAGE:
+
+
+def test_check_typed_dict_name_error() -> None:
+    """Test check_typed_dict with NameError in get_type_hints."""
+
+    class BadTypedDict(TypedDict):
+        # F821 Undefined name `NonExistentType`
+        field: NonExistentType  # type: ignore[name-defined]  # noqa: F821
+
+    data = {"field": "value"}
+
+    with pytest.raises(NameError):
+        check_typed_dict(data, BadTypedDict)
+
+
+def test_check_typed_dict_optional_field_none() -> None:
+    """Test check_typed_dict with optional field that has None value."""
+
+    class OptionalData(TypedDict):
+        required: str
+        optional: NotRequired[str]
+
+    data = {
+        "required": "test",
+        "optional": None,  # This should fail validation
+    }
+
+    with pytest.raises(
+        TypeError,
+        match="None \\(key 'optional'\\) is not instance of",
+    ):
+        check_typed_dict(data, OptionalData)
+
+
+def test_check_invalid_keys_recursive_nested_list() -> None:
+    """Test check_invalid_keys_recursive with nested lists containing dicts."""
+    schema = {
+        "items": [
+            {"type": "string"},
+            {"$ref": "#/definitions/test"},  # Invalid key
+            "plain_string",
+            {"additionalProperties": False},  # Another invalid key
+        ],
+    }
+
+    invalid_keys = check_invalid_keys_recursive(schema)
+    assert "$ref" in invalid_keys
+    assert "additionalProperties" in invalid_keys
+
+
+def test_check_invalid_keys_recursive_deeply_nested() -> None:
+    """Test deeply nested schema validation."""
+    schema = {
+        "level1": {
+            "level2": {
+                "level3": [
+                    {
+                        "level4": {
+                            "$schema": "invalid",  # Should be found
+                            "valid_key": "value",
+                        },
+                    },
+                ],
+            },
+        },
+    }
+
+    invalid_keys = check_invalid_keys_recursive(schema)
+    assert "$schema" in invalid_keys

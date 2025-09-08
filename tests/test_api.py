@@ -17,6 +17,10 @@ async def neuro_api() -> tuple[AbstractNeuroAPI, AsyncMock]:
     class TestNeuroAPI(AbstractNeuroAPI):
         """Test Neuro API."""
 
+        def __init__(self, game_title: str) -> None:
+            super().__init__(game_title)
+            self._websocket = websocket
+
         async def handle_action(self, action: NeuroAction) -> None:
             """Mock implementation for testing."""
 
@@ -30,41 +34,16 @@ async def neuro_api() -> tuple[AbstractNeuroAPI, AsyncMock]:
     return api, websocket
 
 
-##@pytest.mark.trio
-##async def test_not_connected_property(
-##    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
-##) -> None:
-##    api, _ = neuro_api
-##    api.connect(None)
-##    assert api.not_connected
-##
-##    api.connect(AsyncMock())
-##    assert not api.not_connected
-
-
-##@pytest.mark.trio
-##async def test_connection_property(
-##    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
-##) -> None:
-##    api, _ = neuro_api
-##    api.connect(None)
-##    with pytest.raises(RuntimeError):
-##        _ = api.connection
-##
-##    assert api.not_connected
-
-
 @pytest.mark.trio
 async def test_send_command_data(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
     api, websocket = neuro_api
-    data = b"test command"
     websocket.send_message = AsyncMock()
 
-    await api.send_command_data(data)
+    await api.send_command_data(b"test command")
 
-    websocket.send_message.assert_awaited_once_with(data.decode("utf-8"))
+    websocket.send_message.assert_awaited_once_with("test command")
 
 
 @pytest.mark.trio
@@ -97,6 +76,21 @@ async def test_send_context(
 
 
 @pytest.mark.trio
+async def test_send_context_not_silent(
+    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+) -> None:
+    api, websocket = neuro_api
+    message = "hellos neuro!"
+    websocket.send_message = AsyncMock()
+
+    await api.send_context(message, silent=False)
+
+    websocket.send_message.assert_awaited_once_with(
+        command.context_command("Test Game", message, False).decode("utf-8"),
+    )
+
+
+@pytest.mark.trio
 async def test_register_actions(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
@@ -118,29 +112,75 @@ async def test_register_actions(
 async def test_unregister_actions(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
-    api, _ = neuro_api
+    api, websocket = neuro_api
     action = command.Action("test_action", "Test Action", None)
+    websocket.send_message = AsyncMock()
     await api.register_actions([action])
 
     await api.unregister_actions(["test_action"])
 
     assert "test_action" not in api.get_registered()
+    websocket.send_message.assert_awaited_with(
+        command.actions_unregister_command(
+            "Test Game",
+            ["test_action"],
+        ).decode("utf-8"),
+    )
 
 
 @pytest.mark.trio
 async def test_send_force_action(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
-    api, _ = neuro_api
+    api, websocket = neuro_api
     action_names = ["test_action"]
     action = command.Action("test_action", "Test Action", None)
+    websocket.send_message = AsyncMock()
     await api.register_actions([action])
-
-    api.send_command_data = AsyncMock()  # type: ignore[method-assign]
 
     await api.send_force_action("state", "query", action_names)
 
-    api.send_command_data.assert_awaited_once()
+    # Should have been called twice: once for register_actions, once for send_force_action
+    assert websocket.send_message.await_count == 2
+    websocket.send_message.assert_awaited_with(
+        command.actions_force_command(
+            "Test Game",
+            "state",
+            "query",
+            action_names,
+            False,
+        ).decode("utf-8"),
+    )
+
+
+@pytest.mark.trio
+async def test_send_force_action_with_ephemeral_context(
+    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+) -> None:
+    api, websocket = neuro_api
+    action_names = ["test_action"]
+    action = command.Action("test_action", "Test Action", None)
+    websocket.send_message = AsyncMock()
+    await api.register_actions([action])
+
+    await api.send_force_action(
+        "state",
+        "query",
+        action_names,
+        ephemeral_context=True,
+    )
+
+    # Should have been called twice: once for register_actions, once for send_force_action
+    assert websocket.send_message.await_count == 2
+    websocket.send_message.assert_awaited_with(
+        command.actions_force_command(
+            "Test Game",
+            "state",
+            "query",
+            action_names,
+            True,
+        ).decode("utf-8"),
+    )
 
 
 @pytest.mark.trio
@@ -179,6 +219,27 @@ async def test_send_action_result(
 
 
 @pytest.mark.trio
+async def test_send_action_result_no_message(
+    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+) -> None:
+    api, websocket = neuro_api
+    websocket.send_message = AsyncMock()
+    id_ = "id_name"
+    success = True
+
+    await api.send_action_result(id_, success)
+
+    websocket.send_message.assert_awaited_once_with(
+        command.actions_result_command(
+            "Test Game",
+            id_,
+            success,
+            None,
+        ).decode("utf-8"),
+    )
+
+
+@pytest.mark.trio
 async def test_send_shutdown_ready(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
@@ -195,7 +256,7 @@ async def test_send_shutdown_ready(
 
 
 @pytest.mark.trio
-async def test_read_raw_message(
+async def test_read_raw_server_message(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
     api, websocket = neuro_api
@@ -203,8 +264,8 @@ async def test_read_raw_message(
         return_value=b'{"command":"action","data":{"id":"1","name":"test_action"}}',
     )
 
-    command, data = await api.read_raw_message()
-    assert command == "action"
+    command_type, data = await api.read_raw_server_message()
+    assert command_type == "action"
     assert data == {"id": "1", "name": "test_action"}
 
 
@@ -218,6 +279,18 @@ async def test_handle_graceful_shutdown_request(
     await api.handle_graceful_shutdown_request(True)
 
     api.send_shutdown_ready.assert_awaited_once()
+
+
+@pytest.mark.trio
+async def test_handle_graceful_shutdown_request_false(
+    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+) -> None:
+    api, _ = neuro_api
+    api.send_shutdown_ready = AsyncMock()  # type: ignore[method-assign]
+
+    await api.handle_graceful_shutdown_request(False)
+
+    api.send_shutdown_ready.assert_not_awaited()
 
 
 @pytest.mark.trio
@@ -237,14 +310,36 @@ async def test_read_message_action_command(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
     api, _ = neuro_api
-    api.read_raw_message = AsyncMock(  # type: ignore[method-assign]
+    api.read_raw_server_message = AsyncMock(  # type: ignore[method-assign]
         return_value=("action", {"id": "1", "name": "test_action"}),
     )
     api.handle_action = AsyncMock()  # type: ignore[method-assign]
 
     await api.read_message()
 
-    api.handle_action.assert_awaited_once()
+    api.handle_action.assert_awaited_once_with(
+        NeuroAction("1", "test_action", None),
+    )
+
+
+@pytest.mark.trio
+async def test_read_message_action_command_with_data(
+    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+) -> None:
+    api, _ = neuro_api
+    api.read_raw_server_message = AsyncMock(  # type: ignore[method-assign]
+        return_value=(
+            "action",
+            {"id": "1", "name": "test_action", "data": "some_data"},
+        ),
+    )
+    api.handle_action = AsyncMock()  # type: ignore[method-assign]
+
+    await api.read_message()
+
+    api.handle_action.assert_awaited_once_with(
+        NeuroAction("1", "test_action", "some_data"),
+    )
 
 
 @pytest.mark.trio
@@ -252,49 +347,68 @@ async def test_read_message_unknown_command(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
     api, _ = neuro_api
-    api.read_raw_message = AsyncMock(  # type: ignore[method-assign]
+    api.read_raw_server_message = AsyncMock(  # type: ignore[method-assign]
         return_value=("unknown_command", None),
     )
     api.handle_unknown_command = AsyncMock()  # type: ignore[method-assign]
 
     await api.read_message()
 
-    api.handle_unknown_command.assert_awaited_once()
+    api.handle_unknown_command.assert_awaited_once_with(
+        "unknown_command",
+        None,
+    )
 
 
 @pytest.mark.trio
-async def test_read_raw_message_reregister(
+async def test_read_message_reregister(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
     api, websocket = neuro_api
-    websocket.get_message = AsyncMock(
-        return_value=b'{"command":"actions/reregister_all"}',
-    )
+    websocket.send_message = AsyncMock()
 
     action = command.Action("test_action", "Test Action")
     await api.register_actions([action])
 
-    websocket.send_message = AsyncMock()
+    # Mock the read_raw_server_message to return reregister_all command
+    api.read_raw_server_message = AsyncMock(  # type: ignore[method-assign]
+        return_value=("actions/reregister_all", None),
+    )
 
     await api.read_message()
 
-    websocket.send_message.assert_awaited_once_with(
-        command.actions_register_command(
-            "Test Game",
-            [action],
-        ).decode("utf-8"),
-    )
+    # Should have been called twice: once for initial register, once for reregister
+    assert websocket.send_message.await_count == 2
 
 
 @pytest.mark.trio
-async def test_read_raw_message_graceful_shutdown(
+async def test_read_message_reregister_no_actions(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
     api, websocket = neuro_api
-    websocket.get_message = AsyncMock(
-        return_value=b'{"command":"shutdown/graceful","data":{"wants_shutdown":true}}',
+    websocket.send_message = AsyncMock()
+
+    # Don't register any actions first
+
+    # Mock the read_raw_server_message to return reregister_all command
+    api.read_raw_server_message = AsyncMock(  # type: ignore[method-assign]
+        return_value=("actions/reregister_all", None),
     )
 
+    await api.read_message()
+
+    # Should not have been called since no actions were registered
+    websocket.send_message.assert_not_awaited()
+
+
+@pytest.mark.trio
+async def test_read_message_graceful_shutdown(
+    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+) -> None:
+    api, _ = neuro_api
+    api.read_raw_server_message = AsyncMock(  # type: ignore[method-assign]
+        return_value=("shutdown/graceful", {"wants_shutdown": True}),
+    )
     api.send_shutdown_ready = AsyncMock()  # type: ignore[method-assign]
 
     await api.read_message()
@@ -303,19 +417,53 @@ async def test_read_raw_message_graceful_shutdown(
 
 
 @pytest.mark.trio
-async def test_read_raw_message_immediate_shutdown(
+async def test_read_message_graceful_shutdown_false(
     neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
 ) -> None:
-    api, websocket = neuro_api
-    websocket.get_message = AsyncMock(
-        return_value=b'{"command":"shutdown/immediate"}',
+    api, _ = neuro_api
+    api.read_raw_server_message = AsyncMock(  # type: ignore[method-assign]
+        return_value=("shutdown/graceful", {"wants_shutdown": False}),
     )
+    api.send_shutdown_ready = AsyncMock()  # type: ignore[method-assign]
 
+    await api.read_message()
+
+    api.send_shutdown_ready.assert_not_awaited()
+
+
+@pytest.mark.trio
+async def test_read_message_immediate_shutdown(
+    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+) -> None:
+    api, _ = neuro_api
+    api.read_raw_server_message = AsyncMock(  # type: ignore[method-assign]
+        return_value=("shutdown/immediate", None),
+    )
     api.handle_immediate_shutdown = AsyncMock()  # type: ignore[method-assign]
 
     await api.read_message()
 
     api.handle_immediate_shutdown.assert_awaited_once()
+
+
+@pytest.mark.trio
+async def test_get_registered(
+    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+) -> None:
+    api, _ = neuro_api
+
+    # Initially empty
+    assert api.get_registered() == ()
+
+    # Register some actions
+    action1 = command.Action("action1", "Action 1")
+    action2 = command.Action("action2", "Action 2")
+    await api.register_actions([action1, action2])
+
+    registered = api.get_registered()
+    assert "action1" in registered
+    assert "action2" in registered
+    assert len(registered) == 2
 
 
 async def run() -> None:
