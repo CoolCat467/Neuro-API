@@ -18,7 +18,7 @@ RetT = TypeVar("RetT")
 
 
 def _url_for_issue(issue: int) -> str:
-    return f"https://github.com/coolCat467/Neuro-API/issues/{issue}"
+    return f"https://github.com/CoolCat467/Neuro-API/issues/{issue}"
 
 
 def _stringify(thing: object) -> str:

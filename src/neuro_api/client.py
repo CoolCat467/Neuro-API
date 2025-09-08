@@ -139,7 +139,7 @@ class AbstractNeuroAPIClient(metaclass=ABCMeta):
         try:
             message = orjson.loads(content)
         except orjson.JSONDecodeError as exc:
-            if sys.version_info >= (3, 11):
+            if sys.version_info >= (3, 11):  # pragma: nocover
                 exc.add_note(f"{content = }")
             raise
         return command.check_typed_dict(message, NeuroMessage)
