@@ -694,8 +694,8 @@ def convert_parameterized_generic(
             convert_parameterized_generic_nonunion(generic),
         )
     )
-    print(f"[convert_parameterized_generic] {result = }")
-    print(f"[convert_parameterized_generic] {type(result) = }")
+    # print(f"[convert_parameterized_generic] {result = }")
+    # print(f"[convert_parameterized_generic] {type(result) = }")
     if sys.version_info < (3, 11):
         if type(result) is GenericAlias:
             return convert_parameterized_generic(result)
