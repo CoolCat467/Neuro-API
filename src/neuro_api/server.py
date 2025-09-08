@@ -50,7 +50,7 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
     from ssl import SSLContext
 
-if sys.version_info < (3, 11):
+if sys.version_info < (3, 11):  # pragma: nocover
     from exceptiongroup import BaseExceptionGroup
 
 
@@ -661,7 +661,7 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
             trio.MemorySendChannel[tuple[bool, str | None]],
         ] = {}
 
-    def log_warning(self, message: str) -> None:
+    def log_warning(self, message: str) -> None:  # pragma: nocover
         """Handle logging a warning.
 
         Args:
@@ -674,7 +674,7 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
         self,
         command: str,
         data: dict[str, object] | None,
-    ) -> None:
+    ) -> None:  # pragma: nocover
         """Handle commands that are not recognized by the client.
 
         Provides a default error handling mechanism for unexpected commands.
