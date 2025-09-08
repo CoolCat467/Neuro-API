@@ -643,7 +643,7 @@ def convert_paramaterized_generic_union_items(
     """Return tuple of based types from union of paramaterized generic types.
 
     Args:
-        generic (UnionType | T): The generic type or alias to be
+        generic (UnionType | Union | T): The generic type or alias to be
             converted. Can be a UnionType or any other type.
 
     Returns:
@@ -652,7 +652,6 @@ def convert_paramaterized_generic_union_items(
             - For other types, returns the input type as-is.
 
     """
-    print(f"{type(generic) = }")
     if isinstance(generic, UnionType):
         items = generic.__args__
         return tuple(map(convert_parameterized_generic_nonunion, items))
@@ -684,9 +683,13 @@ def convert_parameterized_generic(
         and typing_extensions modules.
 
     """
-    return convert_paramaterized_generic_union_items(
-        convert_parameterized_generic_nonunion(generic),
+    result: T | type | tuple[type, ...] = (
+        convert_paramaterized_generic_union_items(
+            convert_parameterized_generic_nonunion(generic),
+        )
     )
+    print(f"[convert_parameterized_generic] {result = }")
+    return result
 
 
 def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
@@ -735,6 +738,9 @@ def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
     except NameError as exc:
         if sys.version_info >= (3, 11):
             exc.add_note(f"{typed_dict = }")
+            exc.add_note("Very likely you forgot to import something")
+        else:
+            print(f"{typed_dict = }", file=sys.stderr)
         raise
 
     optional = {
@@ -760,6 +766,8 @@ def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
         except TypeError as exc:
             if sys.version_info >= (3, 11):
                 exc.add_note(f"{annotations[key] = }")
+            else:
+                print(f"{annotations[key] = }", file=sys.stderr)
             raise
         if not isinstance_result:
             raise TypeError(
@@ -776,6 +784,8 @@ def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
             except TypeError as exc:
                 if sys.version_info >= (3, 11):
                     exc.add_note(f"{annotations[key] = }")
+                else:
+                    print(f"{annotations[key] = }", file=sys.stderr)
                 raise
             if not isinstance_result:
                 raise TypeError(
