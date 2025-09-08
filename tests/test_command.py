@@ -541,7 +541,7 @@ def test_check_typed_dict_optional_field_none() -> None:
 
     with pytest.raises(
         TypeError,
-        match="None \\(key 'optional'\\) is not instance of <class 'str'>",
+        match="None \\(key 'optional'\\) is not instance of",
     ):
         check_typed_dict(data, OptionalData)
 

@@ -874,7 +874,7 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
         """
         action_id = await self.send_action_command(name, data)
         # Zero for no buffer
-        send, recv = trio.open_memory_channel[tuple[bool, str | None]](0)
+        send, recv = trio.open_memory_channel["tuple[bool, str | None]"](0)
         async with send, recv:
             # Record send channel for handle_action_result
             self._pending_actions[action_id] = send
