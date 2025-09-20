@@ -220,7 +220,7 @@ async def test_read_raw_client_message_missing_game(
 
     with pytest.raises(
         TypeError,
-        match="`game` field missing in client response.",
+        match=r"`game` field missing in client response\.",
     ):
         await client_obj.read_raw_client_message()
 

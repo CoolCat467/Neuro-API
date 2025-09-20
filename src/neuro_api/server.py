@@ -303,7 +303,6 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
 
     async def send_immediate_shutdown_command(
         self,
-        wants_shutdown: bool,
     ) -> None:
         """Send immediate shutdown command to client.
 

@@ -210,7 +210,7 @@ class TestAbstractNeuroServerClient:
         server_client: AbstractNeuroServerClient,
     ) -> None:
         """Test sending immediate shutdown command."""
-        await server_client.send_immediate_shutdown_command(True)
+        await server_client.send_immediate_shutdown_command()
 
         assert len(server_client.sent_data) == 1  # type: ignore[attr-defined]
 

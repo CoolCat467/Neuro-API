@@ -25,7 +25,7 @@ See https://neuro-api.readthedocs.io/en/latest/
 
 ## Feedback
 If you encounter any catch points or anything else that doesn't work
-very smoothly and you have suggestions for improvments, please don't
+very smoothly and you have suggestions for improvements, please don't
 hesitate to reach out via an issue post, though I would suggest
 trying to see if there are similar posts before creating a new one.
 
