@@ -356,7 +356,7 @@ wheels = [
 
 [[package]]
 name = "libcomponent"
-version = "0.0.4"
+version = "0.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
@@ -364,9 +364,9 @@ dependencies = [
     { name = "trio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9a/0a/5f3d65ed7bb368baa69c067a1ef478a994b7326c6747a45fc834e8443890/libcomponent-0.0.4.tar.gz", hash = "sha256:c1daa699d748be0e0132c4062e0527a89a6a8dff32c291efa9880c0715d49c1b", size = 76346, upload-time = "2025-05-06T15:00:37.583Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/4a/e041aa4a2019af6d10aefc0f861041579980b4629aae4bc2bc72d7ea89af/libcomponent-0.0.5.tar.gz", hash = "sha256:679602a93e6b3fd58811d6e7866f6ab096611ecf615ef3a573bec6455c93e809", size = 41202, upload-time = "2025-09-20T05:20:00.252Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c4/ab/c804e77e769a14bace0ff7d536a2c2b9fb08289a0cab7f76840c92a270b6/libcomponent-0.0.4-py3-none-any.whl", hash = "sha256:c26edf821564da1400ede72d1414bc754cd693199d436e3cde7b46b9950d7587", size = 59380, upload-time = "2025-05-06T15:00:35.92Z" },
+    { url = "https://files.pythonhosted.org/packages/97/22/f3c6338ea0facf7740a2f67bf331b083a86532c163f80a4bf3fbbf6fb1e8/libcomponent-0.0.5-py3-none-any.whl", hash = "sha256:bd3f05e3085619ddf14f1727eff81d1160fdd2ee63bf5db4372da5c22d0c8687", size = 37244, upload-time = "2025-09-20T05:19:58.718Z" },
 ]
 
 [[package]]
@@ -461,15 +461,15 @@ requires-dist = [
     { name = "attrs", marker = "extra == 'tools'", specifier = ">=25.3.0" },
     { name = "coverage", marker = "extra == 'tests'", specifier = ">=7.2.5" },
     { name = "exceptiongroup", specifier = ">=1.2.2" },
-    { name = "libcomponent", specifier = "~=0.0.3" },
-    { name = "mypy", marker = "extra == 'tools'", specifier = ">=1.17.0" },
+    { name = "libcomponent", specifier = "~=0.0.5" },
+    { name = "mypy", marker = "extra == 'tools'", specifier = ">=1.18.2" },
     { name = "orjson", specifier = ">=3.10,<4" },
     { name = "pre-commit", marker = "extra == 'tools'", specifier = ">=4.2.0" },
     { name = "pytest", marker = "extra == 'tests'", specifier = ">=5.0" },
     { name = "pytest-cov", marker = "extra == 'tests'", specifier = ">=6.0.0" },
     { name = "pytest-trio", marker = "extra == 'tests'", specifier = ">=0.8.0" },
     { name = "ruff", marker = "extra == 'tools'", specifier = ">=0.9.2" },
-    { name = "trio", specifier = "~=0.30.0" },
+    { name = "trio", specifier = ">=0.31.0" },
     { name = "trio-websocket", specifier = "~=0.12.2" },
     { name = "typing-extensions", specifier = ">=4.12.2" },
     { name = "uv", marker = "extra == 'tests'", specifier = ">=0.5.21" },
@@ -841,7 +841,7 @@ wheels = [
 
 [[package]]
 name = "trio"
-version = "0.30.0"
+version = "0.31.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -852,9 +852,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "sortedcontainers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/01/c1/68d582b4d3a1c1f8118e18042464bb12a7c1b75d64d75111b297687041e3/trio-0.30.0.tar.gz", hash = "sha256:0781c857c0c81f8f51e0089929a26b5bb63d57f927728a5586f7e36171f064df", size = 593776, upload-time = "2025-04-21T00:48:19.507Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/8f/c6e36dd11201e2a565977d8b13f0b027ba4593c1a80bed5185489178e257/trio-0.31.0.tar.gz", hash = "sha256:f71d551ccaa79d0cb73017a33ef3264fde8335728eb4c6391451fe5d253a9d5b", size = 605825, upload-time = "2025-09-09T15:17:15.242Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/69/8e/3f6dfda475ecd940e786defe6df6c500734e686c9cd0a0f8ef6821e9b2f2/trio-0.30.0-py3-none-any.whl", hash = "sha256:3bf4f06b8decf8d3cf00af85f40a89824669e2d033bb32469d34840edcfc22a5", size = 499194, upload-time = "2025-04-21T00:48:17.167Z" },
+    { url = "https://files.pythonhosted.org/packages/31/5b/94237a3485620dbff9741df02ff6d8acaa5fdec67d81ab3f62e4d8511bf7/trio-0.31.0-py3-none-any.whl", hash = "sha256:b5d14cd6293d79298b49c3485ffd9c07e3ce03a6da8c7dfbe0cb3dd7dc9a4774", size = 512679, upload-time = "2025-09-09T15:17:13.821Z" },
 ]
 
 [[package]]
