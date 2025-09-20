@@ -633,13 +633,13 @@ def convert_parameterized_generic_nonunion(
     ).startswith(
         "typing_extensions.NotRequired[",
     ):  # pragma: nocover
-        return generic.__args__[0]  # type: ignore
+        return generic.__args__[0]  # type: ignore[attr-defined, no-any-return]
     if repr(generic).startswith("typing.Optional[") or repr(
         generic,
     ).startswith(
         "typing_extensions.Optional[",
     ):  # pragma: nocover
-        return generic.__args__[0]  # type: ignore
+        return generic.__args__[0]  # type: ignore[attr-defined, no-any-return]
     return generic
 
 

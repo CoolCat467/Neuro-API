@@ -317,6 +317,10 @@ async def run() -> None:
                     neuro_played = trio.Event()
             else:
                 actions = tuple(game.actions(state))
+                assert actions, (
+                    "Can't send choice if no actions to choose from."
+                )
+                index: int = 0
                 while True:
                     print(str(state))
                     for idx, action in enumerate(actions):
