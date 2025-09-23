@@ -143,6 +143,7 @@ class ActionResultData(TypedDict):
     message: NotRequired[str]
 
 
+@staticmethod
 def deserialize_actions(data: dict[str, list[object]]) -> list[Action]:
     """Deserialize a dictionary of actions into a list of Action objects.
 
@@ -175,6 +176,7 @@ def deserialize_actions(data: dict[str, list[object]]) -> list[Action]:
     return actions
 
 
+@staticmethod
 def check_action_names_type(action_names: list[str]) -> None:
     """Validate that all items in the action names list are strings.
 
@@ -511,6 +513,40 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
 
         """
 
+    @staticmethod
+    def deserialize_actions(data: dict[str, list[object]]) -> list[Action]:
+        """Deserialize a dictionary of actions into a list of Action objects.
+
+        Args:
+            data (dict[str, object]): A dictionary containing action
+                registration data.
+
+        Returns:
+            list[Action]: A list of deserialized Action objects.
+
+        Raises:
+            ValueError: If the action data is invalid or fails validation.
+
+        """
+        return deserialize_actions(data)
+
+    @staticmethod
+    def check_action_names_type(action_names: list[str]) -> None:
+        """Validate that all items in the action names list are strings.
+
+        Args:
+            action_names (list[str]): A list of action names to be validated.
+
+        Raises:
+            ValueError: If any item in the list is not a string.
+
+        Examples:
+            >>> check_action_names_type(['action1', 'action2'])  # Passes
+            >>> check_action_names_type(['action1', 123])  # Raises ValueError
+
+        """
+        return check_action_names_type(action_names)
+
     async def read_message(self) -> None:
         """Read and process a message from the client websocket.
 
@@ -566,7 +602,7 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
                     f"`data` attribute must be set for {command_type!r} commands",
                 )
             # Cast is fine because deserialize_actions will check structure.
-            actions = deserialize_actions(
+            actions = self.deserialize_actions(
                 cast("dict[str, list[object]]", data),
             )
             await self.handle_actions_register(game_title, actions)
@@ -580,7 +616,7 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
                 UnregisterActionsData,
             )
             action_names = action_names_data["action_names"]
-            check_action_names_type(action_names)
+            self.check_action_names_type(action_names)
             await self.handle_actions_unregister(game_title, action_names)
         elif command_type == "actions/force":
             if data is None:
@@ -592,7 +628,7 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
                 ForceActionsData,
             )
             action_names = force_actions_data["action_names"]
-            check_action_names_type(action_names)
+            self.check_action_names_type(action_names)
             await self.handle_actions_force(
                 game_title,
                 force_actions_data.get("state", None),
