@@ -143,7 +143,6 @@ class ActionResultData(TypedDict):
     message: NotRequired[str]
 
 
-@staticmethod
 def deserialize_actions(data: dict[str, list[object]]) -> list[Action]:
     """Deserialize a dictionary of actions into a list of Action objects.
 
@@ -176,7 +175,6 @@ def deserialize_actions(data: dict[str, list[object]]) -> list[Action]:
     return actions
 
 
-@staticmethod
 def check_action_names_type(action_names: list[str]) -> None:
     """Validate that all items in the action names list are strings.
 
