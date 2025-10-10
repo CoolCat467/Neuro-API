@@ -232,7 +232,7 @@ Type Conversion and Validation
 
    Extracts origin types from generic aliases, handling NotRequired types.
 
-.. autofunction:: convert_paramaterized_generic_union_items
+.. autofunction:: convert_parameterized_generic_union_items
 
    Converts union types to tuples of base types.
 

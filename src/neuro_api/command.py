@@ -643,10 +643,10 @@ def convert_parameterized_generic_nonunion(
     return generic
 
 
-def convert_paramaterized_generic_union_items(
+def convert_parameterized_generic_union_items(
     generic: UnionType | T,
 ) -> T | tuple[type, ...]:
-    """Return tuple of based types from union of paramaterized generic types.
+    """Return tuple of based types from union of parameterized generic types.
 
     Args:
         generic (UnionType | Union | T): The generic type or alias to be
@@ -690,7 +690,7 @@ def convert_parameterized_generic(
 
     """
     result: T | type | tuple[type, ...] = (
-        convert_paramaterized_generic_union_items(
+        convert_parameterized_generic_union_items(
             convert_parameterized_generic_nonunion(generic),
         )
     )

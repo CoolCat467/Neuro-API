@@ -18,9 +18,9 @@ from neuro_api.command import (
     check_invalid_keys_recursive,
     check_typed_dict,
     context_command,
-    convert_paramaterized_generic_union_items,
     convert_parameterized_generic,
     convert_parameterized_generic_nonunion,
+    convert_parameterized_generic_union_items,
     format_command,
     reregister_all_command,
     shutdown_graceful_command,
@@ -483,17 +483,17 @@ def test_convert_parameterized_generic_nonunion_regular_type() -> None:
     assert result is str
 
 
-def test_convert_paramaterized_generic_union_items_union() -> None:
-    """Test convert_paramaterized_generic_union_items with UnionType."""
+def test_convert_parameterized_generic_union_items_union() -> None:
+    """Test convert_parameterized_generic_union_items with UnionType."""
     if sys.version_info >= (3, 10):
         union = str | int
-        result = convert_paramaterized_generic_union_items(union)
+        result = convert_parameterized_generic_union_items(union)
         assert result == (str, int)
 
 
-def test_convert_paramaterized_generic_union_items_regular_type() -> None:
-    """Test convert_paramaterized_generic_union_items with regular type."""
-    result = convert_paramaterized_generic_union_items(str)
+def test_convert_parameterized_generic_union_items_regular_type() -> None:
+    """Test convert_parameterized_generic_union_items with regular type."""
+    result = convert_parameterized_generic_union_items(str)
     assert result is str
 
 
