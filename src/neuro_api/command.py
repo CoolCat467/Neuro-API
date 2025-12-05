@@ -636,14 +636,14 @@ def convert_parameterized_generic_nonunion(
         "typing_extensions.NotRequired[",
     ):  # pragma: nocover
         inner = generic.__args__[0]  # type: ignore[attr-defined]
-        return convert_parameterized_generic(inner)
+        return convert_parameterized_generic_nonunion(inner)
     if repr(generic).startswith("typing.Optional[") or repr(
         generic,
     ).startswith(
         "typing_extensions.Optional[",
     ):  # pragma: nocover
         inner = generic.__args__[0]  # type: ignore[attr-defined]
-        return convert_parameterized_generic(inner)
+        return convert_parameterized_generic_nonunion(inner)
     if is_typeddict(generic):
         return dict
     return generic
