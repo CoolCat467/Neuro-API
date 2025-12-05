@@ -45,10 +45,7 @@ from typing_extensions import NotRequired, is_typeddict
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
-if sys.version_info >= (3, 10):
-    from types import UnionType
-else:
-    from typing import _UnionGenericAlias as UnionType
+from types import UnionType
 
 T = TypeVar("T")
 
