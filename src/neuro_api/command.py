@@ -27,7 +27,7 @@ __license__ = "GNU Lesser General Public License Version 3"
 
 
 import sys
-from types import GenericAlias
+from types import GenericAlias, UnionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -46,11 +46,6 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from neuro_api.json_schema import SchemaObject
-
-if sys.version_info >= (3, 10):
-    from types import UnionType
-else:
-    from typing import _UnionGenericAlias as UnionType
 
 T = TypeVar("T")
 
