@@ -140,7 +140,7 @@ def check_invalid_keys_recursive(
     """Recursively checks for invalid keys in the schema.
 
     Args:
-        sub_schema (dict[str, Any] | SchemaObject): The schema to check for invalid keys.
+        sub_schema (SchemaObject): The schema to check for invalid keys.
 
     Returns:
         list[str]: A list of invalid keys that were found.
