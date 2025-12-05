@@ -75,53 +75,8 @@ default: 0
 """
 
 
-_STRING_ARRAY_DEFAULT: TypeAlias = list[str]
-"""Default value of the field path 'string array'"""
-
-
 CORE_SCHEMA_META_SCHEMA_DEFAULT: TypeAlias = Literal[True]
 """Default value of the field path 'Root'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_DEFINITIONS_DEFAULT: TypeAlias = dict[
-    str,
-    object,
-]
-"""Default value of the field path 'Core schema meta-schema object definitions'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_ITEMS_ANYOF1_DEFAULT: TypeAlias = Literal[True]
-"""Default value of the field path 'Core schema meta-schema object items anyof1'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_ITEMS_DEFAULT: TypeAlias = Literal[True]
-"""Default value of the field path 'Core schema meta-schema object items'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_PATTERNPROPERTIES_DEFAULT: TypeAlias = dict[
-    str,
-    object,
-]
-"""Default value of the field path 'Core schema meta-schema object patternProperties'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_PROPERTIES_DEFAULT: TypeAlias = dict[
-    str,
-    object,
-]
-"""Default value of the field path 'Core schema meta-schema object properties'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_READONLY_DEFAULT: TypeAlias = Literal[False]
-"""Default value of the field path 'Core schema meta-schema object readOnly'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_UNIQUEITEMS_DEFAULT: TypeAlias = Literal[False]
-"""Default value of the field path 'Core schema meta-schema object uniqueItems'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_WRITEONLY_DEFAULT: TypeAlias = Literal[False]
-"""Default value of the field path 'Core schema meta-schema object writeOnly'"""
 
 
 # | default: True
