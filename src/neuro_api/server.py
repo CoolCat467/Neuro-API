@@ -41,7 +41,7 @@ from trio_websocket import (
 )
 from typing_extensions import NotRequired
 
-from neuro_api import command
+from neuro_api import command, json_schema
 from neuro_api.api import __version__
 from neuro_api.client import AbstractNeuroAPIClient
 from neuro_api.command import Action
@@ -83,7 +83,7 @@ class ActionSchema(TypedDict):
 
     name: str
     description: str
-    schema: NotRequired[dict[str, object]]
+    schema: NotRequired[json_schema.SchemaObject]
 
 
 class RegisterActionsData(TypedDict):
