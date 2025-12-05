@@ -485,10 +485,9 @@ def test_convert_parameterized_generic_nonunion_regular_type() -> None:
 
 def test_convert_parameterized_generic_union_items_union() -> None:
     """Test convert_parameterized_generic_union_items with UnionType."""
-    if sys.version_info >= (3, 10):
-        union = str | int
-        result = convert_parameterized_generic_union_items(union)
-        assert result == (str, int)
+    union = str | int
+    result = convert_parameterized_generic_union_items(union)
+    assert result == (str, int)
 
 
 def test_convert_parameterized_generic_union_items_regular_type() -> None:
@@ -505,10 +504,9 @@ def test_convert_parameterized_generic() -> None:
     # Test with GenericAlias
     assert convert_parameterized_generic(list[str]) is list
 
-    # Test with UnionType (if available)
-    if sys.version_info >= (3, 10):
-        result = convert_parameterized_generic(str | int)
-        assert result == (str, int)
+    # Test with UnionType
+    result = convert_parameterized_generic(str | int)
+    assert result == (str, int)
 
 
 # NEW TESTS FOR BETTER COVERAGE:
