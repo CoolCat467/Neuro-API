@@ -38,10 +38,11 @@ from typing import (
     cast,
     get_type_hints,
 )
-from .json_schema import SchemaObject
 
 import orjson
 from typing_extensions import NotRequired, is_typeddict
+
+from .json_schema import SchemaObject
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
