@@ -42,10 +42,10 @@ from typing import (
 import orjson
 from typing_extensions import NotRequired, is_typeddict
 
-from .json_schema import SchemaObject
-
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+
+    from neuro_api.json_schema import SchemaObject
 
 if sys.version_info >= (3, 10):
     from types import UnionType

@@ -1,13 +1,43 @@
+"""JSON Schema - Schemas for enhanced text editor predictions."""
+
+# Programmed by CoolCat467
+
+from __future__ import annotations
+
+# JSON Schema - Schemas for enhanced text editor predictions
+# Copyright (C) 2025  CoolCat467
+#
+#     This program is free software: you can redistribute it and/or
+#     modify it under the terms of the GNU Lesser General Public License
+#     as published by the Free Software Foundation, either version 3 of
+#     the License, or (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#     Lesser General Public License for more details.
+#
+#     You should have received a copy of the GNU Lesser General Public
+#     License along with this program.  If not, see
+#     <https://www.gnu.org/licenses/>.
+
+__title__ = "json_schema"
+__author__ = "CoolCat467"
+__license__ = "GNU Lesser General Public License Version 3"
+
+
 from typing import Any, Literal, TypedDict, Union
 
 CORE_SCHEMA_META_SCHEMA_DEFAULT = True
-r""" Default value of the field path 'Root' """
+"""Default value of the field path 'Root'"""
 
 
+# TODO: change to `Union["SchemaObject", False]` instead?
 CoreSchemaMetaSchema = Union[
-    "SchemaObject", bool,
-]  # TODO: change to `Union["SchemaObject", False]` instead?
-r"""
+    "SchemaObject",
+    bool,
+]
+"""
 Core schema meta-schema.
 
 default: True
@@ -15,35 +45,35 @@ default: True
 
 
 _CORE_SCHEMA_META_SCHEMA_OBJECT_DEFINITIONS_DEFAULT: dict[str, Any] = {}
-r""" Default value of the field path 'Core schema meta-schema object definitions' """
+"""Default value of the field path 'Core schema meta-schema object definitions'"""
 
 
 _CORE_SCHEMA_META_SCHEMA_OBJECT_ITEMS_ANYOF1_DEFAULT = True
-r""" Default value of the field path 'Core schema meta-schema object items anyof1' """
+"""Default value of the field path 'Core schema meta-schema object items anyof1'"""
 
 
 _CORE_SCHEMA_META_SCHEMA_OBJECT_ITEMS_DEFAULT = True
-r""" Default value of the field path 'Core schema meta-schema object items' """
+"""Default value of the field path 'Core schema meta-schema object items'"""
 
 
 _CORE_SCHEMA_META_SCHEMA_OBJECT_PATTERNPROPERTIES_DEFAULT: dict[str, Any] = {}
-r""" Default value of the field path 'Core schema meta-schema object patternProperties' """
+"""Default value of the field path 'Core schema meta-schema object patternProperties'"""
 
 
 _CORE_SCHEMA_META_SCHEMA_OBJECT_PROPERTIES_DEFAULT: dict[str, Any] = {}
-r""" Default value of the field path 'Core schema meta-schema object properties' """
+"""Default value of the field path 'Core schema meta-schema object properties'"""
 
 
 _CORE_SCHEMA_META_SCHEMA_OBJECT_READONLY_DEFAULT = False
-r""" Default value of the field path 'Core schema meta-schema object readOnly' """
+"""Default value of the field path 'Core schema meta-schema object readOnly'"""
 
 
 _CORE_SCHEMA_META_SCHEMA_OBJECT_UNIQUEITEMS_DEFAULT = False
-r""" Default value of the field path 'Core schema meta-schema object uniqueItems' """
+"""Default value of the field path 'Core schema meta-schema object uniqueItems'"""
 
 
 _CORE_SCHEMA_META_SCHEMA_OBJECT_WRITEONLY_DEFAULT = False
-r""" Default value of the field path 'Core schema meta-schema object writeOnly' """
+"""Default value of the field path 'Core schema meta-schema object writeOnly'"""
 
 
 # | default: True
@@ -122,7 +152,8 @@ SchemaObject = TypedDict(
         # |   {}
         "patternProperties": dict[str, "CoreSchemaMetaSchema"],
         "dependencies": dict[
-            str, "_CoreSchemaMetaSchemaObjectDependenciesAdditionalproperties",
+            str,
+            "_CoreSchemaMetaSchemaObjectDependenciesAdditionalproperties",
         ],
         # | Core schema meta-schema.
         # |
@@ -165,15 +196,17 @@ SchemaObject = TypedDict(
 
 
 _CoreSchemaMetaSchemaObjectDependenciesAdditionalproperties = Union[
-    "CoreSchemaMetaSchema", "_StringArray",
+    "CoreSchemaMetaSchema",
+    "_StringArray",
 ]
-r""" Aggregation type: anyOf """
+"""Aggregation type: anyOf"""
 
 
 _CoreSchemaMetaSchemaObjectItems = Union[
-    "CoreSchemaMetaSchema", "_SchemaArray",
+    "CoreSchemaMetaSchema",
+    "_SchemaArray",
 ]
-r"""
+"""
 default: True
 
 Aggregation type: anyOf
@@ -181,62 +214,69 @@ Aggregation type: anyOf
 
 
 _CoreSchemaMetaSchemaObjectType = Union[
-    "_SimpleTypes", "_CoreSchemaMetaSchemaObjectTypeAnyof1",
+    "_SimpleTypes",
+    "_CoreSchemaMetaSchemaObjectTypeAnyof1",
 ]
-r""" Aggregation type: anyOf """
+"""Aggregation type: anyOf"""
 
 
 _CoreSchemaMetaSchemaObjectTypeAnyof1 = list["_SimpleTypes"]
-r"""
+"""
 minItems: 1
 uniqueItems: True
 """
 
 
 _NON_NEGATIVE_INTEGER_DEFAULT0_DEFAULT = 0
-r""" Default value of the field path 'non negative integer default0' """
+"""Default value of the field path 'non negative integer default0'"""
 
 
 _NonNegativeInteger = int
-r""" minimum: 0 """
+"""minimum: 0"""
 
 
 _NonNegativeIntegerDefault0 = int
-r"""
+"""
 minimum: 0
 default: 0
 """
 
 
 _STRING_ARRAY_DEFAULT: list[Any] = []
-r""" Default value of the field path 'string array' """
+"""Default value of the field path 'string array'"""
 
 
 _SchemaArray = list["CoreSchemaMetaSchema"]
-r""" minItems: 1 """
+"""minItems: 1"""
 
 
-_SimpleTypes = (
-    Literal["array", "boolean", "integer", "null", "number", "object", "string"]
-)
+_SimpleTypes = Literal[
+    "array",
+    "boolean",
+    "integer",
+    "null",
+    "number",
+    "object",
+    "string",
+]
 _SIMPLETYPES_ARRAY: Literal["array"] = "array"
-r"""The values for the '_SimpleTypes' enum"""
+"""The values for the '_SimpleTypes' enum"""
 _SIMPLETYPES_BOOLEAN: Literal["boolean"] = "boolean"
-r"""The values for the '_SimpleTypes' enum"""
+"""The values for the '_SimpleTypes' enum"""
 _SIMPLETYPES_INTEGER: Literal["integer"] = "integer"
-r"""The values for the '_SimpleTypes' enum"""
+"""The values for the '_SimpleTypes' enum"""
 _SIMPLETYPES_NULL: Literal["null"] = "null"
-r"""The values for the '_SimpleTypes' enum"""
+"""The values for the '_SimpleTypes' enum"""
 _SIMPLETYPES_NUMBER: Literal["number"] = "number"
-r"""The values for the '_SimpleTypes' enum"""
+"""The values for the '_SimpleTypes' enum"""
 _SIMPLETYPES_OBJECT: Literal["object"] = "object"
-r"""The values for the '_SimpleTypes' enum"""
+"""The values for the '_SimpleTypes' enum"""
 _SIMPLETYPES_STRING: Literal["string"] = "string"
-r"""The values for the '_SimpleTypes' enum"""
+"""The values for the '_SimpleTypes' enum"""
 
 
 _StringArray = list[str]
-r"""
+"""
 uniqueItems: True
 default:
   []
