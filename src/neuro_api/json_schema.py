@@ -26,9 +26,7 @@ __author__ = "CoolCat467"
 __license__ = "GNU Lesser General Public License Version 3"
 
 
-from typing import Final, Literal, TypedDict, Union
-
-from typing_extensions import TypeAlias
+from typing import Final, Literal, TypeAlias, TypedDict
 
 _SimpleTypes: TypeAlias = Literal[
     "array",
@@ -197,7 +195,7 @@ class SchemaObject(TypedDict, total=False):
     ##not: CoreSchemaMetaSchema
 
 
-CoreSchemaMetaSchema: TypeAlias = Union[SchemaObject, Literal[False]]
+CoreSchemaMetaSchema: TypeAlias = SchemaObject | Literal[False]
 """
 Core schema meta-schema.
 
@@ -207,17 +205,11 @@ default: True
 _SchemaArray: TypeAlias = list[CoreSchemaMetaSchema]
 """minItems: 1"""
 
-_CoreSchemaMetaSchemaObjectDependenciesAdditionalproperties: TypeAlias = Union[
-    CoreSchemaMetaSchema,
-    _StringArray,
-]
+_CoreSchemaMetaSchemaObjectDependenciesAdditionalproperties: TypeAlias = CoreSchemaMetaSchema | _StringArray
 """Aggregation type: anyOf"""
 
 
-_CoreSchemaMetaSchemaObjectItems: TypeAlias = Union[
-    CoreSchemaMetaSchema,
-    _SchemaArray,
-]
+_CoreSchemaMetaSchemaObjectItems: TypeAlias = CoreSchemaMetaSchema | _SchemaArray
 """
 default: True
 
@@ -232,8 +224,5 @@ uniqueItems: True
 """
 
 
-_CoreSchemaMetaSchemaObjectType: TypeAlias = Union[
-    _SimpleTypes,
-    _CoreSchemaMetaSchemaObjectTypeAnyof1,
-]
+_CoreSchemaMetaSchemaObjectType: TypeAlias = _SimpleTypes | _CoreSchemaMetaSchemaObjectTypeAnyof1
 """Aggregation type: anyOf"""
