@@ -26,7 +26,7 @@ __author__ = "CoolCat467"
 __license__ = "GNU Lesser General Public License Version 3"
 
 
-from typing import Final, Literal, TypedDict
+from typing import Final, Literal, TypedDict, Union
 
 from typing_extensions import TypeAlias
 
@@ -197,7 +197,7 @@ class SchemaObject(TypedDict, total=False):
     ##not: CoreSchemaMetaSchema
 
 
-CoreSchemaMetaSchema: TypeAlias = SchemaObject | Literal[False]
+CoreSchemaMetaSchema: TypeAlias = Union[SchemaObject, Literal[False]]
 """
 Core schema meta-schema.
 
