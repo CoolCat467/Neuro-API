@@ -28,26 +28,31 @@ from neuro_api.command import (
     shutdown_ready_command,
     startup_command,
 )
+from neuro_api.json_schema import SchemaObject
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
 def test_check_invalid_keys_recursive() -> None:
-    valid_schema = {
-        "type": "object",
-        "properties": {
-            "name": {"type": "string"},
-            "age": {"type": "integer"},
+    valid_schema = SchemaObject(
+        {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer"},
+            },
         },
-    }
-    invalid_schema = {
-        "type": "object",
-        "$schema": "http://json-schema.org/draft-07/schema",
-        "properties": {
-            "name": {"type": "string"},
+    )
+    invalid_schema = SchemaObject(
+        {
+            "type": "object",
+            "$schema": "http://json-schema.org/draft-07/schema",  # type: ignore[typeddict-unknown-key]
+            "properties": {
+                "name": {"type": "string"},
+            },
         },
-    }
+    )
 
     assert check_invalid_keys_recursive(valid_schema) == []
     assert check_invalid_keys_recursive(invalid_schema) == ["$schema"]
@@ -60,20 +65,24 @@ def test_check_invalid_keys_recursive_bad_keys() -> None:
     found at https://github.com/Pasu4/neuro-api-tony,
     which is licensed under the MIT License.
     """
-    schema = {
-        "valid_key": {},
-        "allOf": {},
-        "another_key": {
-            "$vocabulary": {},
-            "3rd level": [
-                {
-                    "additionalProperties": "seven",
-                    "uses_waffle_iron": True,
-                },
-                "spaghetti",
-            ],
+    schema = SchemaObject(
+        {
+            # Extra keys ("valid_key", "another_key") for TypedDict "SchemaObject"
+            "valid_key": {},  # type: ignore[typeddict-unknown-key]
+            # Incompatible types (expression has type "dict[Never, Never]", TypedDict item "allOf" has type "_SchemaArray")
+            "allOf": {},  # type: ignore[typeddict-item]
+            "another_key": {
+                "$vocabulary": {},
+                "3rd level": [
+                    {
+                        "additionalProperties": "seven",
+                        "uses_waffle_iron": True,
+                    },
+                    "spaghetti",
+                ],
+            },
         },
-    }
+    )
     invalid_keys = check_invalid_keys_recursive(schema)
 
     assert invalid_keys == ["allOf", "$vocabulary", "additionalProperties"]
@@ -83,7 +92,8 @@ def test_check_invalid_keys_recursive_unhandled_type() -> None:
     with pytest.raises(ValueError, match="Unhandled schema value type"):
         check_invalid_keys_recursive(
             {
-                "jerald": set(),
+                # Extra key "jerald" for TypedDict "SchemaObject"
+                "jerald": set(),  # type: ignore[typeddict-unknown-key]
             },
         )
 
@@ -548,14 +558,17 @@ def test_check_typed_dict_optional_field_none() -> None:
 
 def test_check_invalid_keys_recursive_nested_list() -> None:
     """Test check_invalid_keys_recursive with nested lists containing dicts."""
-    schema = {
-        "items": [
-            {"type": "string"},
-            {"$ref": "#/definitions/test"},  # Invalid key
-            "plain_string",
-            {"additionalProperties": False},  # Another invalid key
-        ],
-    }
+    schema = SchemaObject(
+        {
+            "items": [
+                {"type": "string"},
+                # Invalid key
+                {"$ref": "#/definitions/test"},  # type: ignore[list-item]
+                "plain_string",  # type: ignore[list-item]
+                {"additionalProperties": False},  # Another invalid key
+            ],
+        },
+    )
 
     invalid_keys = check_invalid_keys_recursive(schema)
     assert "$ref" in invalid_keys
@@ -564,20 +577,22 @@ def test_check_invalid_keys_recursive_nested_list() -> None:
 
 def test_check_invalid_keys_recursive_deeply_nested() -> None:
     """Test deeply nested schema validation."""
-    schema = {
-        "level1": {
-            "level2": {
-                "level3": [
-                    {
-                        "level4": {
-                            "$schema": "invalid",  # Should be found
-                            "valid_key": "value",
+    schema = SchemaObject(
+        {
+            "level1": {  # type: ignore[typeddict-unknown-key]
+                "level2": {
+                    "level3": [
+                        {
+                            "level4": {
+                                "$schema": "invalid",  # Should be found
+                                "valid_key": "value",
+                            },
                         },
-                    },
-                ],
+                    ],
+                },
             },
         },
-    }
+    )
 
     invalid_keys = check_invalid_keys_recursive(schema)
     assert "$schema" in invalid_keys

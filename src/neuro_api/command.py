@@ -135,7 +135,7 @@ class Action(NamedTuple):
 
 
 def check_invalid_keys_recursive(
-    sub_schema: dict[str, Any] | SchemaObject,
+    sub_schema: SchemaObject,
 ) -> list[str]:
     """Recursively checks for invalid keys in the schema.
 
@@ -159,12 +159,20 @@ def check_invalid_keys_recursive(
         elif isinstance(value, (str, int, bool)):
             pass
         elif isinstance(value, dict):
-            invalid_keys.extend(check_invalid_keys_recursive(value))
+            # Probably not quite correct to cast to SchemaObject here,
+            # should do subtype properly, but for this particular
+            # function and usecase probably not an issue.
+            invalid_keys.extend(
+                check_invalid_keys_recursive(cast("SchemaObject", value)),
+            )
         elif isinstance(value, list):
             for item in value:
                 if isinstance(item, dict):
+                    # Same issue, see above.
                     invalid_keys.extend(
-                        check_invalid_keys_recursive(item),
+                        check_invalid_keys_recursive(
+                            cast("SchemaObject", item),
+                        ),
                     )
         else:
             raise ValueError(
