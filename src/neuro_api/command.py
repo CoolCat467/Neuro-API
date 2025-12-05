@@ -38,6 +38,7 @@ from typing import (
     cast,
     get_type_hints,
 )
+from .json_schema import SchemaObject
 
 import orjson
 from typing_extensions import NotRequired, is_typeddict
@@ -129,7 +130,7 @@ class Action(NamedTuple):
 
     name: str
     description: str
-    schema: dict[str, object] | None = None
+    schema: SchemaObject | None = None
 
 
 def check_invalid_keys_recursive(
