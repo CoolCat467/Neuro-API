@@ -240,7 +240,7 @@ def test_check_action_invalid_schema_key() -> None:
     action = Action(
         name="valid_action",
         description="A valid action",
-        schema={"$schema": {}},
+        schema={"$schema": {}},  # type: ignore[arg-type]
     )
     with pytest.raises(
         ValueError,

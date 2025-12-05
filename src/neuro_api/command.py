@@ -135,12 +135,12 @@ class Action(NamedTuple):
 
 
 def check_invalid_keys_recursive(
-    sub_schema: dict[str, Any],
+    sub_schema: dict[str, Any] | SchemaObject,
 ) -> list[str]:
     """Recursively checks for invalid keys in the schema.
 
     Args:
-        sub_schema (dict[str, Any]): The schema to check for invalid keys.
+        sub_schema (dict[str, Any] | SchemaObject): The schema to check for invalid keys.
 
     Returns:
         list[str]: A list of invalid keys that were found.
@@ -642,6 +642,8 @@ def convert_parameterized_generic_nonunion(
         "typing_extensions.Optional[",
     ):  # pragma: nocover
         return generic.__args__[0]  # type: ignore[attr-defined, no-any-return]
+    if is_typeddict(generic):
+        return dict
     return generic
 
 

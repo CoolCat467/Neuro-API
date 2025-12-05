@@ -26,231 +26,9 @@ __author__ = "CoolCat467"
 __license__ = "GNU Lesser General Public License Version 3"
 
 
-from typing import Any, Literal, TypedDict, Union
+from typing import Final, Literal, TypeAlias, TypedDict
 
-CORE_SCHEMA_META_SCHEMA_DEFAULT = True
-"""Default value of the field path 'Root'"""
-
-
-# TODO: change to `Union["SchemaObject", False]` instead?
-CoreSchemaMetaSchema = Union[
-    "SchemaObject",
-    bool,
-]
-"""
-Core schema meta-schema.
-
-default: True
-"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_DEFINITIONS_DEFAULT: dict[str, Any] = {}
-"""Default value of the field path 'Core schema meta-schema object definitions'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_ITEMS_ANYOF1_DEFAULT = True
-"""Default value of the field path 'Core schema meta-schema object items anyof1'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_ITEMS_DEFAULT = True
-"""Default value of the field path 'Core schema meta-schema object items'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_PATTERNPROPERTIES_DEFAULT: dict[str, Any] = {}
-"""Default value of the field path 'Core schema meta-schema object patternProperties'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_PROPERTIES_DEFAULT: dict[str, Any] = {}
-"""Default value of the field path 'Core schema meta-schema object properties'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_READONLY_DEFAULT = False
-"""Default value of the field path 'Core schema meta-schema object readOnly'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_UNIQUEITEMS_DEFAULT = False
-"""Default value of the field path 'Core schema meta-schema object uniqueItems'"""
-
-
-_CORE_SCHEMA_META_SCHEMA_OBJECT_WRITEONLY_DEFAULT = False
-"""Default value of the field path 'Core schema meta-schema object writeOnly'"""
-
-
-# | default: True
-SchemaObject = TypedDict(
-    "_CoreSchemaMetaSchemaObject",
-    {
-        # | format: uri-reference
-        "$id": str,
-        # | format: uri
-        "$schema": str,
-        # | format: uri-reference
-        "$ref": str,
-        "$comment": str,
-        "title": str,
-        "description": str,
-        "default": Any,
-        # | default: False
-        "readOnly": bool,
-        # | default: False
-        "writeOnly": bool,
-        "examples": list[Any],
-        # | exclusiveMinimum: 0
-        "multipleOf": int | float,
-        "maximum": int | float,
-        "exclusiveMaximum": int | float,
-        "minimum": int | float,
-        "exclusiveMinimum": int | float,
-        # | minimum: 0
-        "maxLength": "_NonNegativeInteger",
-        # | minimum: 0
-        # | default: 0
-        "minLength": "_NonNegativeIntegerDefault0",
-        # | format: regex
-        "pattern": str,
-        # | Core schema meta-schema.
-        # |
-        # | default: True
-        "additionalItems": "CoreSchemaMetaSchema",
-        # | default: True
-        # |
-        # | Aggregation type: anyOf
-        "items": "_CoreSchemaMetaSchemaObjectItems",
-        # | minimum: 0
-        "maxItems": "_NonNegativeInteger",
-        # | minimum: 0
-        # | default: 0
-        "minItems": "_NonNegativeIntegerDefault0",
-        # | default: False
-        "uniqueItems": bool,
-        # | Core schema meta-schema.
-        # |
-        # | default: True
-        "contains": "CoreSchemaMetaSchema",
-        # | minimum: 0
-        "maxProperties": "_NonNegativeInteger",
-        # | minimum: 0
-        # | default: 0
-        "minProperties": "_NonNegativeIntegerDefault0",
-        # | uniqueItems: True
-        # | default:
-        # |   []
-        "required": "_StringArray",
-        # | Core schema meta-schema.
-        # |
-        # | default: True
-        "additionalProperties": "CoreSchemaMetaSchema",
-        # | default:
-        # |   {}
-        "definitions": dict[str, "CoreSchemaMetaSchema"],
-        # | default:
-        # |   {}
-        "properties": dict[str, "CoreSchemaMetaSchema"],
-        # | propertyNames:
-        # |   format: regex
-        # | default:
-        # |   {}
-        "patternProperties": dict[str, "CoreSchemaMetaSchema"],
-        "dependencies": dict[
-            str,
-            "_CoreSchemaMetaSchemaObjectDependenciesAdditionalproperties",
-        ],
-        # | Core schema meta-schema.
-        # |
-        # | default: True
-        "propertyNames": "CoreSchemaMetaSchema",
-        "const": Any,
-        # | minItems: 1
-        # | uniqueItems: True
-        "enum": list[Any],
-        # | Aggregation type: anyOf
-        "type": "_CoreSchemaMetaSchemaObjectType",
-        "format": str,
-        "contentMediaType": str,
-        "contentEncoding": str,
-        # | Core schema meta-schema.
-        # |
-        # | default: True
-        "if": "CoreSchemaMetaSchema",
-        # | Core schema meta-schema.
-        # |
-        # | default: True
-        "then": "CoreSchemaMetaSchema",
-        # | Core schema meta-schema.
-        # |
-        # | default: True
-        "else": "CoreSchemaMetaSchema",
-        # | minItems: 1
-        "allOf": "_SchemaArray",
-        # | minItems: 1
-        "anyOf": "_SchemaArray",
-        # | minItems: 1
-        "oneOf": "_SchemaArray",
-        # | Core schema meta-schema.
-        # |
-        # | default: True
-        "not": "CoreSchemaMetaSchema",
-    },
-    total=False,
-)
-
-
-_CoreSchemaMetaSchemaObjectDependenciesAdditionalproperties = Union[
-    "CoreSchemaMetaSchema",
-    "_StringArray",
-]
-"""Aggregation type: anyOf"""
-
-
-_CoreSchemaMetaSchemaObjectItems = Union[
-    "CoreSchemaMetaSchema",
-    "_SchemaArray",
-]
-"""
-default: True
-
-Aggregation type: anyOf
-"""
-
-
-_CoreSchemaMetaSchemaObjectType = Union[
-    "_SimpleTypes",
-    "_CoreSchemaMetaSchemaObjectTypeAnyof1",
-]
-"""Aggregation type: anyOf"""
-
-
-_CoreSchemaMetaSchemaObjectTypeAnyof1 = list["_SimpleTypes"]
-"""
-minItems: 1
-uniqueItems: True
-"""
-
-
-_NON_NEGATIVE_INTEGER_DEFAULT0_DEFAULT = 0
-"""Default value of the field path 'non negative integer default0'"""
-
-
-_NonNegativeInteger = int
-"""minimum: 0"""
-
-
-_NonNegativeIntegerDefault0 = int
-"""
-minimum: 0
-default: 0
-"""
-
-
-_STRING_ARRAY_DEFAULT: list[Any] = []
-"""Default value of the field path 'string array'"""
-
-
-_SchemaArray = list["CoreSchemaMetaSchema"]
-"""minItems: 1"""
-
-
-_SimpleTypes = Literal[
+_SimpleTypes: TypeAlias = Literal[
     "array",
     "boolean",
     "integer",
@@ -274,10 +52,228 @@ _SIMPLETYPES_OBJECT: Literal["object"] = "object"
 _SIMPLETYPES_STRING: Literal["string"] = "string"
 """The values for the '_SimpleTypes' enum"""
 
-
-_StringArray = list[str]
+_StringArray: TypeAlias = list[str]
 """
 uniqueItems: True
 default:
   []
 """
+
+
+_NON_NEGATIVE_INTEGER_DEFAULT0_DEFAULT: Final = 0
+"""Default value of the field path 'non negative integer default0'"""
+
+
+_NonNegativeInteger: TypeAlias = int
+"""minimum: 0"""
+
+
+_NonNegativeIntegerDefault0: TypeAlias = int
+"""
+minimum: 0
+default: 0
+"""
+
+
+_STRING_ARRAY_DEFAULT: TypeAlias = list[str]
+"""Default value of the field path 'string array'"""
+
+
+CORE_SCHEMA_META_SCHEMA_DEFAULT: TypeAlias = Literal[True]
+"""Default value of the field path 'Root'"""
+
+
+_CORE_SCHEMA_META_SCHEMA_OBJECT_DEFINITIONS_DEFAULT: TypeAlias = dict[
+    str,
+    object,
+]
+"""Default value of the field path 'Core schema meta-schema object definitions'"""
+
+
+_CORE_SCHEMA_META_SCHEMA_OBJECT_ITEMS_ANYOF1_DEFAULT: TypeAlias = Literal[True]
+"""Default value of the field path 'Core schema meta-schema object items anyof1'"""
+
+
+_CORE_SCHEMA_META_SCHEMA_OBJECT_ITEMS_DEFAULT: TypeAlias = Literal[True]
+"""Default value of the field path 'Core schema meta-schema object items'"""
+
+
+_CORE_SCHEMA_META_SCHEMA_OBJECT_PATTERNPROPERTIES_DEFAULT: TypeAlias = dict[
+    str,
+    object,
+]
+"""Default value of the field path 'Core schema meta-schema object patternProperties'"""
+
+
+_CORE_SCHEMA_META_SCHEMA_OBJECT_PROPERTIES_DEFAULT: TypeAlias = dict[
+    str,
+    object,
+]
+"""Default value of the field path 'Core schema meta-schema object properties'"""
+
+
+_CORE_SCHEMA_META_SCHEMA_OBJECT_READONLY_DEFAULT: TypeAlias = Literal[False]
+"""Default value of the field path 'Core schema meta-schema object readOnly'"""
+
+
+_CORE_SCHEMA_META_SCHEMA_OBJECT_UNIQUEITEMS_DEFAULT: TypeAlias = Literal[False]
+"""Default value of the field path 'Core schema meta-schema object uniqueItems'"""
+
+
+_CORE_SCHEMA_META_SCHEMA_OBJECT_WRITEONLY_DEFAULT: TypeAlias = Literal[False]
+"""Default value of the field path 'Core schema meta-schema object writeOnly'"""
+
+
+# | default: True
+class SchemaObject(TypedDict, total=False):
+    """Schema object typed dict."""
+
+    ### | format: uri-reference
+    ##$id: str
+    ### | format: uri
+    ##$schema: str
+    ### | format: uri-reference
+    ##$ref: str
+    ##$comment: str
+    title: str
+    description: str
+    default: object
+    # | default: False
+    readOnly: bool
+    # | default: False
+    writeOnly: bool
+    examples: list[object]
+    # | exclusiveMinimum: 0
+    multipleOf: int | float
+    maximum: int | float
+    exclusiveMaximum: int | float
+    minimum: int | float
+    exclusiveMinimum: int | float
+    # | minimum: 0
+    maxLength: _NonNegativeInteger
+    # | minimum: 0
+    # | default: 0
+    minLength: _NonNegativeIntegerDefault0
+    # | format: regex
+    pattern: str
+    # | Core schema meta-schema.
+    # |
+    # | default: True
+    additionalItems: CoreSchemaMetaSchema
+    # | default: True
+    # |
+    # | Aggregation type: anyOf
+    items: _CoreSchemaMetaSchemaObjectItems
+    # | minimum: 0
+    maxItems: _NonNegativeInteger
+    # | minimum: 0
+    # | default: 0
+    minItems: _NonNegativeIntegerDefault0
+    # | default: False
+    uniqueItems: bool
+    # | Core schema meta-schema.
+    # |
+    # | default: True
+    contains: CoreSchemaMetaSchema
+    # | minimum: 0
+    maxProperties: _NonNegativeInteger
+    # | minimum: 0
+    # | default: 0
+    minProperties: _NonNegativeIntegerDefault0
+    # | uniqueItems: True
+    # | default:
+    # |   []
+    required: _StringArray
+    # | Core schema meta-schema.
+    # |
+    # | default: True
+    additionalProperties: CoreSchemaMetaSchema
+    # | default:
+    # |   {}
+    definitions: dict[str, CoreSchemaMetaSchema]
+    # | default:
+    # |   {}
+    properties: dict[str, CoreSchemaMetaSchema]
+    # | propertyNames:
+    # |   format: regex
+    # | default:
+    # |   {}
+    patternProperties: dict[str, CoreSchemaMetaSchema]
+    dependencies: dict[
+        str,
+        _CoreSchemaMetaSchemaObjectDependenciesAdditionalproperties,
+    ]
+    # | Core schema meta-schema.
+    # |
+    # | default: True
+    propertyNames: CoreSchemaMetaSchema
+    const: object
+    # | minItems: 1
+    # | uniqueItems: True
+    enum: list[object]
+    # | Aggregation type: anyOf
+    type: _CoreSchemaMetaSchemaObjectType
+    format: str
+    contentMediaType: str
+    contentEncoding: str
+    # | Core schema meta-schema.
+    # |
+    # | default: True
+    ##if: CoreSchemaMetaSchema
+    ### | Core schema meta-schema.
+    ### |
+    ### | default: True
+    then: CoreSchemaMetaSchema
+    # | Core schema meta-schema.
+    # |
+    # | default: True
+    ##else: CoreSchemaMetaSchema
+    ### | minItems: 1
+    allOf: _SchemaArray
+    # | minItems: 1
+    anyOf: _SchemaArray
+    # | minItems: 1
+    oneOf: _SchemaArray
+    ### | Core schema meta-schema.
+    ### |
+    ### | default: True
+    ##not: CoreSchemaMetaSchema
+
+
+CoreSchemaMetaSchema: TypeAlias = SchemaObject | Literal[False]
+"""
+Core schema meta-schema.
+
+default: True
+"""
+
+_SchemaArray: TypeAlias = list[CoreSchemaMetaSchema]
+"""minItems: 1"""
+
+_CoreSchemaMetaSchemaObjectDependenciesAdditionalproperties: TypeAlias = (
+    CoreSchemaMetaSchema | _StringArray
+)
+"""Aggregation type: anyOf"""
+
+
+_CoreSchemaMetaSchemaObjectItems: TypeAlias = (
+    CoreSchemaMetaSchema | _SchemaArray
+)
+"""
+default: True
+
+Aggregation type: anyOf
+"""
+
+
+_CoreSchemaMetaSchemaObjectTypeAnyof1: TypeAlias = list[_SimpleTypes]
+"""
+minItems: 1
+uniqueItems: True
+"""
+
+
+_CoreSchemaMetaSchemaObjectType: TypeAlias = (
+    _SimpleTypes | _CoreSchemaMetaSchemaObjectTypeAnyof1
+)
+"""Aggregation type: anyOf"""
