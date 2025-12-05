@@ -207,15 +207,17 @@ default: True
 _SchemaArray: TypeAlias = list[CoreSchemaMetaSchema]
 """minItems: 1"""
 
-_CoreSchemaMetaSchemaObjectDependenciesAdditionalproperties: TypeAlias = (
-    CoreSchemaMetaSchema | _StringArray
-)
+_CoreSchemaMetaSchemaObjectDependenciesAdditionalproperties: TypeAlias = Union[
+    CoreSchemaMetaSchema,
+    _StringArray,
+]
 """Aggregation type: anyOf"""
 
 
-_CoreSchemaMetaSchemaObjectItems: TypeAlias = (
-    CoreSchemaMetaSchema | _SchemaArray
-)
+_CoreSchemaMetaSchemaObjectItems: TypeAlias = Union[
+    CoreSchemaMetaSchema,
+    _SchemaArray,
+]
 """
 default: True
 
@@ -230,7 +232,8 @@ uniqueItems: True
 """
 
 
-_CoreSchemaMetaSchemaObjectType: TypeAlias = (
-    _SimpleTypes | _CoreSchemaMetaSchemaObjectTypeAnyof1
-)
+_CoreSchemaMetaSchemaObjectType: TypeAlias = Union[
+    _SimpleTypes,
+    _CoreSchemaMetaSchemaObjectTypeAnyof1,
+]
 """Aggregation type: anyOf"""
