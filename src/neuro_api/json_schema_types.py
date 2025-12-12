@@ -1,4 +1,4 @@
-"""JSON Schema - Schemas for enhanced text editor predictions."""
+"""JSON Schema Types - Schemas for enhanced text editor predictions."""
 
 # Programmed by CoolCat467
 

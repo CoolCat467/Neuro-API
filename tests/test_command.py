@@ -28,7 +28,7 @@ from neuro_api.command import (
     shutdown_ready_command,
     startup_command,
 )
-from neuro_api.json_schema import SchemaObject
+from neuro_api.json_schema_types import SchemaObject
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

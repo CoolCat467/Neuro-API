@@ -45,7 +45,7 @@ from typing_extensions import NotRequired, is_typeddict
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
-    from neuro_api.json_schema import SchemaObject
+    from neuro_api.json_schema_types import SchemaObject
 
 T = TypeVar("T")
 

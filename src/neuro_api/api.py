@@ -30,11 +30,13 @@ __license__ = "GNU Lesser General Public License Version 3"
 from abc import abstractmethod
 from typing import TYPE_CHECKING, NamedTuple
 
-from neuro_api import _deprecate, command, json_schema
+from neuro_api import _deprecate, command
 from neuro_api.client import AbstractNeuroAPIClient
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from neuro_api.json_schema_types import SchemaObject
 
 
 class NeuroAction(NamedTuple):
@@ -97,7 +99,7 @@ class AbstractNeuroAPI(AbstractNeuroAPIClient):
         # `actions/reregister_all` command.
         self._currently_registered: dict[
             str,
-            tuple[str, json_schema.SchemaObject | None],
+            tuple[str, SchemaObject | None],
         ] = {}
 
     def get_registered(self) -> tuple[str, ...]:
