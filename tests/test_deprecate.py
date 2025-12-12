@@ -44,7 +44,7 @@ def test_warn_deprecated(recwarn_always: pytest.WarningsRecorder) -> None:
     got = recwarn_always.pop(DeprecationWarning)
     assert isinstance(got.message, Warning)
     assert "ice is deprecated" in got.message.args[0]
-    assert "Trio 1.2" in got.message.args[0]
+    assert "Neuro-API 1.2" in got.message.args[0]
     assert "water instead" in got.message.args[0]
     assert "/issues/1" in got.message.args[0]
     assert got.filename == filename
@@ -61,7 +61,7 @@ def test_warn_deprecated_no_instead_or_issue(
     assert isinstance(got.message, Warning)
     assert "water is deprecated" in got.message.args[0]
     assert "no replacement" in got.message.args[0]
-    assert "Trio 1.3" in got.message.args[0]
+    assert "Neuro-API 1.3" in got.message.args[0]
 
 
 def test_warn_deprecated_stacklevel(
@@ -305,7 +305,7 @@ def test_module_with_deprecations(
     assert got.lineno == lineno + 1
 
     assert "module_with_deprecations.dep1" in got.message.args[0]
-    assert "Trio 1.1" in got.message.args[0]
+    assert "Neuro-API 1.1" in got.message.args[0]
     assert "/issues/1" in got.message.args[0]
     assert "value1 instead" in got.message.args[0]
 
@@ -325,6 +325,6 @@ def test_warning_class() -> None:
     # essentially the same as the above check
     with pytest.warns(
         DeprecationWarning,
-        match="^foo is deprecated since Trio bar with no replacement$",
+        match="^foo is deprecated since Neuro-API bar with no replacement$",
     ):
         warn_deprecated("foo", "bar", issue=None, instead=None)
