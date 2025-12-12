@@ -27,7 +27,7 @@ __license__ = "GNU Lesser General Public License Version 3"
 
 
 import sys
-from types import GenericAlias
+from types import GenericAlias, UnionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -45,7 +45,7 @@ from typing_extensions import NotRequired, is_typeddict
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
-from types import UnionType
+    from neuro_api.json_schema_types import SchemaObject
 
 T = TypeVar("T")
 
@@ -126,16 +126,16 @@ class Action(NamedTuple):
 
     name: str
     description: str
-    schema: dict[str, object] | None = None
+    schema: SchemaObject | None = None
 
 
 def check_invalid_keys_recursive(
-    sub_schema: dict[str, Any],
+    sub_schema: SchemaObject,
 ) -> list[str]:
     """Recursively checks for invalid keys in the schema.
 
     Args:
-        sub_schema (dict[str, Any]): The schema to check for invalid keys.
+        sub_schema (SchemaObject): The schema to check for invalid keys.
 
     Returns:
         list[str]: A list of invalid keys that were found.
@@ -154,12 +154,20 @@ def check_invalid_keys_recursive(
         elif isinstance(value, (str, int, bool)):
             pass
         elif isinstance(value, dict):
-            invalid_keys.extend(check_invalid_keys_recursive(value))
+            # Probably not quite correct to cast to SchemaObject here,
+            # should do subtype properly, but for this particular
+            # function and usecase probably not an issue.
+            invalid_keys.extend(
+                check_invalid_keys_recursive(cast("SchemaObject", value)),
+            )
         elif isinstance(value, list):
             for item in value:
                 if isinstance(item, dict):
+                    # Same issue, see above.
                     invalid_keys.extend(
-                        check_invalid_keys_recursive(item),
+                        check_invalid_keys_recursive(
+                            cast("SchemaObject", item),
+                        ),
                     )
         else:
             raise ValueError(
@@ -630,13 +638,17 @@ def convert_parameterized_generic_nonunion(
     ).startswith(
         "typing_extensions.NotRequired[",
     ):  # pragma: nocover
-        return generic.__args__[0]  # type: ignore[attr-defined, no-any-return]
+        inner = generic.__args__[0]  # type: ignore[attr-defined]
+        return convert_parameterized_generic_nonunion(inner)
     if repr(generic).startswith("typing.Optional[") or repr(
         generic,
     ).startswith(
         "typing_extensions.Optional[",
     ):  # pragma: nocover
-        return generic.__args__[0]  # type: ignore[attr-defined, no-any-return]
+        inner = generic.__args__[0]  # type: ignore[attr-defined]
+        return convert_parameterized_generic_nonunion(inner)
+    if is_typeddict(generic):
+        return dict
     return generic
 
 

@@ -36,6 +36,8 @@ from neuro_api.client import AbstractNeuroAPIClient
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from neuro_api.json_schema_types import SchemaObject
+
 
 class NeuroAction(NamedTuple):
     """Representation of a Neuro Action with its associated details.
@@ -97,7 +99,7 @@ class AbstractNeuroAPI(AbstractNeuroAPIClient):
         # `actions/reregister_all` command.
         self._currently_registered: dict[
             str,
-            tuple[str, dict[str, object] | None],
+            tuple[str, SchemaObject | None],
         ] = {}
 
     def get_registered(self) -> tuple[str, ...]:
