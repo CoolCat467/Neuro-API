@@ -36,7 +36,7 @@ def warn_deprecated(
     stacklevel: int = 2,
 ) -> None:
     stacklevel += 1
-    msg = f"{_stringify(thing)} is deprecated since Trio {version}"
+    msg = f"{_stringify(thing)} is deprecated since Neuro-API {version}"
     if instead is None:
         msg += " with no replacement"
     else:

@@ -42,6 +42,8 @@ from typing import (
 import orjson
 from typing_extensions import NotRequired, is_typeddict
 
+from neuro_api._deprecate import deprecated_alias
+
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
@@ -671,6 +673,17 @@ def convert_parameterized_generic_union_items(
         items = generic.__args__
         return tuple(map(convert_parameterized_generic_nonunion, items))
     return generic
+
+
+# Old name with a typo, TODO remove
+convert_parameterized_generic_union_items = (  # spellcheck: ignore
+    deprecated_alias(
+        "convert_parameterized_generic_union_items",  # spellcheck: ignore
+        convert_parameterized_generic_union_items,
+        "2.3.0",
+        issue=None,
+    )
+)
 
 
 def convert_parameterized_generic(
