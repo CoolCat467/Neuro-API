@@ -245,6 +245,7 @@ class AbstractNeuroAPI(AbstractNeuroAPIClient):
         query: str,
         action_names: Sequence[str],
         ephemeral_context: bool = False,
+        priority: command.ForcePriority = command.ForcePriority.LOW,
     ) -> None:
         """Force Neuro to execute an action with specific context.
 
@@ -268,6 +269,20 @@ class AbstractNeuroAPI(AbstractNeuroAPIClient):
                   be remembered after actions force completion.
                 - If True: Neuro will only remember the context during the
                   actions force.
+            priority (command.ForcePriority):
+                Determines how urgently Neuro should respond to the
+                action force when she is speaking. If Neuro is not
+                speaking, this setting has no effect. The default is
+                `command.ForcePriority.LOW`, which will cause Neuro to
+                wait until she finishes speaking before responding.
+                `command.ForcePriority.MEDIUM` causes her to finish her
+                current utterance sooner. `command.ForcePriority.HIGH`
+                prompts her to process the action force immediately,
+                shortening her utterance and then responding.
+                `command.ForcePriority.CRITICAL` will interrupt her
+                speech and make her respond at once. Use
+                `command.ForcePriority.CRITICAL` with caution, as it may
+                lead to abrupt and potentially jarring interruptions.
 
         Raises:
             ValueError: If any specified action name is not currently
@@ -294,6 +309,7 @@ class AbstractNeuroAPI(AbstractNeuroAPIClient):
                 query,
                 action_names,
                 ephemeral_context,
+                priority,
             ),
         )
 

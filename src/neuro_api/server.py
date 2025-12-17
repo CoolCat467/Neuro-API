@@ -30,7 +30,7 @@ import traceback
 import weakref
 from abc import ABCMeta, abstractmethod
 from functools import partial
-from typing import TYPE_CHECKING, Any, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
 from uuid import UUID
 
 import trio
@@ -44,7 +44,7 @@ from typing_extensions import NotRequired
 from neuro_api import command, json_schema_types
 from neuro_api.api import __version__
 from neuro_api.client import AbstractNeuroAPIClient
-from neuro_api.command import Action
+from neuro_api.command import Action, ForcePriority
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -119,12 +119,14 @@ class ForceActionsData(TypedDict):
             Flag for ephemeral context. Defaults to None.
         action_names (list[str]): List of action names to force.
 
+
     """
 
     state: NotRequired[str]
     query: str
     ephemeral_context: NotRequired[bool]
     action_names: list[str]
+    priority: Literal["low" | "medium" | "high" | "critical"] | None
 
 
 class ActionResultData(TypedDict):
@@ -428,6 +430,7 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
         query: str,
         ephemeral_context: bool,
         action_names: list[str],
+        priority: ForcePriority,
     ) -> None:
         """Force Neuro to choose and execute actions from a specified list.
 
@@ -449,6 +452,19 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
                   force operation
             action_names (list[str]): Names of actions Neuro MUST choose
                 from when executing the force command.
+            priority (ForcePriority):
+                Determines how urgently Neuro should respond to the
+                action force when she is speaking. If Neuro is not
+                speaking, this setting has no effect. The default is
+                `ForcePriority.LOW`, which will cause Neuro to wait
+                until she finishes speaking before responding.
+                `ForcePriority.MEDIUM` causes her to finish her current
+                utterance sooner. `ForcePriority.HIGH` prompts her to
+                process the action force immediately, shortening her
+                utterance and then responding. `ForcePriority.CRITICAL`
+                will interrupt her speech and make her respond at once.
+                Use `ForcePriority.CRITICAL` with caution, as it may
+                lead to abrupt and potentially jarring interruptions.
 
         """
 
@@ -633,6 +649,7 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
                 force_actions_data["query"],
                 force_actions_data.get("ephemeral_context", False),
                 action_names,
+                ForcePriority(force_actions_data.get("priority", "low")),
             )
         elif command_type == "action/result":
             if data is None:
@@ -1040,6 +1057,7 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
         query: str,
         ephemeral_context: bool,
         action_names: list[str],
+        priority: ForcePriority,
     ) -> None:
         """Execute a forced action sequence with automatic retry on failure.
 
@@ -1142,6 +1160,7 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
         query: str,
         ephemeral_context: bool,
         action_names: list[str],
+        priority: ForcePriority,
     ) -> None:
         """Process a force actions command from the game client.
 
@@ -1162,6 +1181,19 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
                 - True: State and query are only used during this operation
             action_names (list[str]): List of action names that Neuro is
                 restricted to choose from during this force sequence.
+            priority (ForcePriority):
+                Determines how urgently Neuro should respond to the
+                action force when she is speaking. If Neuro is not
+                speaking, this setting has no effect. The default is
+                `ForcePriority.LOW`, which will cause Neuro to wait
+                until she finishes speaking before responding.
+                `ForcePriority.MEDIUM` causes her to finish her current
+                utterance sooner. `ForcePriority.HIGH` prompts her to
+                process the action force immediately, shortening her
+                utterance and then responding. `ForcePriority.CRITICAL`
+                will interrupt her speech and make her respond at once.
+                Use `ForcePriority.CRITICAL` with caution, as it may
+                lead to abrupt and potentially jarring interruptions.
 
         Behavior:
             1. Validates the game title matches the current session
@@ -1189,6 +1221,7 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
             query,
             ephemeral_context,
             action_names,
+            priority,
         )
         await self.submit_call_async_soon(do_actions_force)
 
