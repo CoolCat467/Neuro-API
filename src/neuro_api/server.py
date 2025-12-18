@@ -126,7 +126,7 @@ class ForceActionsData(TypedDict):
     query: str
     ephemeral_context: NotRequired[bool]
     action_names: list[str]
-    priority: Literal["low" | "medium" | "high" | "critical"] | None
+    priority: NotRequired[Literal["low" | "medium" | "high" | "critical"]]
 
 
 class ActionResultData(TypedDict):
