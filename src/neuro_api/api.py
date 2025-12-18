@@ -30,7 +30,7 @@ __license__ = "GNU Lesser General Public License Version 3"
 from abc import abstractmethod
 from typing import TYPE_CHECKING, NamedTuple
 
-from neuro_api import _deprecate, command
+from neuro_api import command
 from neuro_api.client import AbstractNeuroAPIClient
 
 if TYPE_CHECKING:
@@ -462,13 +462,6 @@ class AbstractNeuroAPI(AbstractNeuroAPIClient):
 
         """
         await self.send_shutdown_ready()
-
-    read_raw_message = _deprecate.deprecated_async_alias(
-        "read_raw_message",
-        AbstractNeuroAPIClient.read_raw_server_message,
-        "2.1.0",
-        issue=None,
-    )
 
     async def read_message(self) -> None:
         """Read message from Neuro websocket.
