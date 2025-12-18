@@ -252,9 +252,9 @@ def test_check_action_invalid_schema_key() -> None:
         description="A valid action",
         schema={"$schema": {}},  # type: ignore[arg-type]
     )
-    with pytest.raises(
-        ValueError,
-        match="Following invalid keys found in schema",
+    with pytest.warns(
+        UserWarning,
+        match="Discouraged keys found in schema",
     ):
         check_action(action)
 
