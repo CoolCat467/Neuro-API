@@ -27,6 +27,7 @@ __license__ = "GNU Lesser General Public License Version 3"
 
 
 import sys
+from enum import Enum
 from types import GenericAlias, UnionType
 from typing import (
     TYPE_CHECKING,
@@ -42,8 +43,6 @@ from warnings import warn
 
 import orjson
 from typing_extensions import NotRequired, is_typeddict
-
-from neuro_api._deprecate import deprecated_alias
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -338,12 +337,22 @@ def actions_unregister_command(
     )
 
 
+class ForcePriority(str, Enum):
+    """`actions/force` `priority` field values."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
 def actions_force_command(
     game: str,
     state: str,
     query: str,
     action_names: Sequence[str],
     ephemeral_context: bool = False,
+    priority: ForcePriority = ForcePriority.LOW,
 ) -> bytes:
     """Return formatted actions/force command.
 
@@ -375,6 +384,19 @@ def actions_force_command(
             remembered by Neuro after the actions force is completed.
             If True, Neuro will only remember it for the duration of
             the actions force. Defaults to False.
+        priority (ForcePriority):
+            Determines how urgently Neuro should respond to the action
+            force when she is speaking. If Neuro is not speaking, this
+            setting has no effect. The default is `ForcePriority.LOW`,
+            which will cause Neuro to wait until she finishes speaking
+            before responding. `ForcePriority.MEDIUM` causes her to
+            finish her current utterance sooner. `ForcePriority.HIGH`
+            prompts her to process the action force immediately,
+            shortening her utterance and then responding.
+            `ForcePriority.CRITICAL` will interrupt her speech and make
+            her respond at once. Use `ForcePriority.CRITICAL` with
+            caution, as it may lead to abrupt and potentially jarring
+            interruptions.
 
     Returns:
         bytes: A formatted command to force actions for the specified game.
@@ -389,6 +411,7 @@ def actions_force_command(
         "state": state,
         "query": query,
         "action_names": list(action_names),
+        "priority": priority.value,
     }
     if ephemeral_context:
         payload["ephemeral_context"] = True
@@ -674,17 +697,6 @@ def convert_parameterized_generic_union_items(
         items = generic.__args__
         return tuple(map(convert_parameterized_generic_nonunion, items))
     return generic
-
-
-# Old name with a typo, TODO remove
-convert_parameterized_generic_union_items = (  # spellcheck: ignore
-    deprecated_alias(
-        "convert_parameterized_generic_union_items",  # spellcheck: ignore
-        convert_parameterized_generic_union_items,
-        "2.3.0",
-        issue=None,
-    )
-)
 
 
 def convert_parameterized_generic(
