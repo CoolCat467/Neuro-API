@@ -412,7 +412,7 @@ def actions_force_command(
         "state": state,
         "query": query,
         "action_names": list(action_names),
-        "priority": str(priority),
+        "priority": priority.value,
     }
     if ephemeral_context:
         payload["ephemeral_context"] = True

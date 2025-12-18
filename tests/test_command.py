@@ -8,6 +8,7 @@ from typing_extensions import NotRequired
 
 from neuro_api.command import (
     Action,
+    ForcePriority,
     IncomingActionMessageSchema,
     action_command,
     actions_force_command,
@@ -157,7 +158,7 @@ def test_actions_force_command() -> None:
     query = "Please take your turn."
     action_names = ["test_action"]
 
-    expected_output = b'{"command":"actions/force","game":"Test Game","data":{"state":"Game is in progress.","query":"Please take your turn.","action_names":["test_action"]}}'
+    expected_output = b'{"command":"actions/force","game":"Test Game","data":{"state":"Game is in progress.","query":"Please take your turn.","action_names":["test_action"],"priority":"low"}}'
     assert (
         actions_force_command(game, state, query, action_names)
         == expected_output
@@ -170,9 +171,90 @@ def test_actions_force_command_ephemeral() -> None:
     query = "Please take your turn."
     action_names = ["test_action"]
 
-    expected_output = b'{"command":"actions/force","game":"Test Game","data":{"state":"Game is in progress.","query":"Please take your turn.","action_names":["test_action"],"ephemeral_context":true}}'
+    expected_output = b'{"command":"actions/force","game":"Test Game","data":{"state":"Game is in progress.","query":"Please take your turn.","action_names":["test_action"],"priority":"low","ephemeral_context":true}}'
     assert (
         actions_force_command(game, state, query, action_names, True)
+        == expected_output
+    )
+
+
+def test_actions_force_command_priority_medium() -> None:
+    game = "Test Game"
+    state = "Game is in progress."
+    query = "Please take your turn."
+    action_names = ["test_action"]
+    priority = ForcePriority.MEDIUM
+
+    expected_output = b'{"command":"actions/force","game":"Test Game","data":{"state":"Game is in progress.","query":"Please take your turn.","action_names":["test_action"],"priority":"medium"}}'
+    assert (
+        actions_force_command(
+            game,
+            state,
+            query,
+            action_names,
+            priority=priority,
+        )
+        == expected_output
+    )
+
+
+def test_actions_force_command_priority_high() -> None:
+    game = "Test Game"
+    state = "Game is in progress."
+    query = "Please take your turn."
+    action_names = ["test_action"]
+    priority = ForcePriority.HIGH
+
+    expected_output = b'{"command":"actions/force","game":"Test Game","data":{"state":"Game is in progress.","query":"Please take your turn.","action_names":["test_action"],"priority":"high"}}'
+    assert (
+        actions_force_command(
+            game,
+            state,
+            query,
+            action_names,
+            priority=priority,
+        )
+        == expected_output
+    )
+
+
+def test_actions_force_command_priority_critical() -> None:
+    game = "Test Game"
+    state = "Game is in progress."
+    query = "Please take your turn."
+    action_names = ["test_action"]
+    priority = ForcePriority.CRITICAL
+
+    expected_output = b'{"command":"actions/force","game":"Test Game","data":{"state":"Game is in progress.","query":"Please take your turn.","action_names":["test_action"],"priority":"critical"}}'
+    assert (
+        actions_force_command(
+            game,
+            state,
+            query,
+            action_names,
+            priority=priority,
+        )
+        == expected_output
+    )
+
+
+def test_actions_force_command_priority_explicit_low() -> None:
+    game = "Test Game"
+    state = "Game is in progress."
+    query = "Please take your turn."
+    action_names = ["test_action"]
+    priority = ForcePriority.LOW
+
+    expected_output = b'{"command":"actions/force","game":"Test Game","data":{"state":"Game is in progress.","query":"Please take your turn.","action_names":["test_action"],"priority":"low"}}'
+    assert (
+        actions_force_command(
+            game,
+            state,
+            query,
+            action_names,
+            False,
+            priority,
+        )
         == expected_output
     )
 
