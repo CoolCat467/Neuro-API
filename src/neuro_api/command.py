@@ -881,4 +881,6 @@ def check_action(action: Action) -> None:
     if action.schema is not None:
         bad_schema_keys = check_invalid_keys_recursive(action.schema)
         if bad_schema_keys:
-            warn(f"Discouraged keys found in schema: {bad_schema_keys} ({action.name = })\nPlease make sure you accurately check for them in your integration.")
+            warn(
+                f"Discouraged keys found in schema: {bad_schema_keys} ({action.name = })\nPlease make sure you accurately check for them in your integration.",
+            )
