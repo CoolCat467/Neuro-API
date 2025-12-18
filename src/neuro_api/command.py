@@ -39,6 +39,7 @@ from typing import (
     cast,
     get_type_hints,
 )
+from warnings import warn
 
 import orjson
 from typing_extensions import NotRequired, is_typeddict
@@ -892,6 +893,7 @@ def check_action(action: Action) -> None:
     if action.schema is not None:
         bad_schema_keys = check_invalid_keys_recursive(action.schema)
         if bad_schema_keys:
-            raise ValueError(
-                f"Following invalid keys found in schema: {bad_schema_keys} ({action.name = })",
+            warn(
+                f"Discouraged keys found in schema: {bad_schema_keys} ({action.name = })\nPlease make sure you accurately check for them in your integration.",
+                stacklevel=2,
             )
