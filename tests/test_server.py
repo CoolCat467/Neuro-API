@@ -9,7 +9,7 @@ import pytest
 import trio
 from trio_websocket import WebSocketConnection, WebSocketRequest
 
-from neuro_api.command import Action
+from neuro_api.command import Action, ForcePriority
 from neuro_api.server import (
     AbstractHandlerNeuroServerClient,
     AbstractNeuroServerClient,
@@ -138,6 +138,7 @@ class TestAbstractNeuroServerClient:
                 query: str,
                 ephemeral_context: bool,
                 action_names: list[str],
+                priority: ForcePriority,
             ) -> None:
                 raise NotImplementedError()
 
@@ -457,6 +458,7 @@ class TestAbstractHandlerNeuroServerClient:
                     "query",
                     False,
                     ["action1", "action2"],
+                    ForcePriority.LOW,
                 )
 
                 # Should only be called once since first attempt succeeded
@@ -490,6 +492,7 @@ class TestAbstractHandlerNeuroServerClient:
                     "query",
                     False,
                     ["action1", "action2"],
+                    ForcePriority.LOW,
                 )
 
                 assert call_count == 3  # Should retry until success

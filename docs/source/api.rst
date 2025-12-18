@@ -502,12 +502,6 @@ The API module handles various error conditions:
       except Exception as e:
           print(f"Unexpected error: {e}")
 
-Deprecated Methods
-------------------
-
-.. deprecated:: 2.1.0
-   ``read_raw_message`` has been deprecated. Use ``read_raw_server_message`` from the parent class instead.
-
 Dependencies
 ------------
 
