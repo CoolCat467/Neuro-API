@@ -118,7 +118,9 @@ class ForceActionsData(TypedDict):
         ephemeral_context (NotRequired[bool], optional):
             Flag for ephemeral context. Defaults to None.
         action_names (list[str]): List of action names to force.
-
+        priority (ForcePriority):
+            Determines how urgently Neuro should respond to the action
+            force when she is speaking.
 
     """
 
