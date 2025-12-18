@@ -883,4 +883,5 @@ def check_action(action: Action) -> None:
         if bad_schema_keys:
             warn(
                 f"Discouraged keys found in schema: {bad_schema_keys} ({action.name = })\nPlease make sure you accurately check for them in your integration.",
+                stacklevel=2,
             )
