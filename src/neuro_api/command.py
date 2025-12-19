@@ -33,10 +33,13 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Final,
+    Literal,
     NamedTuple,
     TypedDict,
     TypeVar,
     cast,
+    get_args,
+    get_origin,
     get_type_hints,
 )
 from warnings import warn
@@ -664,14 +667,14 @@ def convert_parameterized_generic_nonunion(
     ).startswith(
         "typing_extensions.NotRequired[",
     ):  # pragma: nocover
-        inner = generic.__args__[0]  # type: ignore[attr-defined]
+        inner = get_args(generic)[0]
         return convert_parameterized_generic_nonunion(inner)
     if repr(generic).startswith("typing.Optional[") or repr(
         generic,
     ).startswith(
         "typing_extensions.Optional[",
     ):  # pragma: nocover
-        inner = generic.__args__[0]  # type: ignore[attr-defined]
+        inner = get_args(generic)[0]
         return convert_parameterized_generic_nonunion(inner)
     if is_typeddict(generic):
         return dict
@@ -694,7 +697,7 @@ def convert_parameterized_generic_union_items(
 
     """
     if isinstance(generic, UnionType):
-        items = generic.__args__
+        items = get_args(generic)
         return tuple(map(convert_parameterized_generic_nonunion, items))
     return generic
 
@@ -822,10 +825,17 @@ def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
     for key in optional:
         if key in data and data is not None:
             try:
-                isinstance_result = isinstance(
-                    data[key],
-                    convert_parameterized_generic(annotations[key]),
-                )
+                key_type = convert_parameterized_generic(annotations[key])
+                if get_origin(key_type) is Literal:
+                    literal_values = list(
+                        map(convert_parameterized_generic, get_args(key_type)),
+                    )
+                    isinstance_result = data[key] in literal_values
+                else:
+                    isinstance_result = isinstance(
+                        data[key],
+                        key_type,
+                    )
             except TypeError as exc:
                 if sys.version_info >= (3, 11):
                     exc.add_note(f"{annotations[key] = }")

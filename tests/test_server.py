@@ -9,7 +9,7 @@ import pytest
 import trio
 from trio_websocket import WebSocketConnection, WebSocketRequest
 
-from neuro_api.command import Action, ForcePriority
+from neuro_api.command import Action, ForcePriority, check_typed_dict
 from neuro_api.server import (
     AbstractHandlerNeuroServerClient,
     AbstractNeuroServerClient,
@@ -17,6 +17,7 @@ from neuro_api.server import (
     AbstractTrioNeuroServer,
     BaseTrioNeuroServerClient,
     ConsoleInteractiveNeuroServer,
+    ForceActionsData,
     TrioNeuroServerClient,
     check_action_names_type,
     deserialize_actions,
@@ -94,6 +95,21 @@ def test_check_action_names_type_invalid() -> None:
 
     with pytest.raises(ValueError, match="123 is not a string object"):
         check_action_names_type(action_names)  # type: ignore[arg-type]
+
+
+def test_actions_force_check_typed_dict() -> None:
+    """Test `actions/force` check_typed_dict."""
+    data = {
+        "query": "Enter waffle ID",
+        "action_names": ["choose_waffle"],
+        "priority": "low",
+    }
+
+    result = check_typed_dict(
+        data,
+        ForceActionsData,
+    )
+    assert result == data
 
 
 class TestAbstractNeuroServerClient:
