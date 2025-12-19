@@ -1003,6 +1003,7 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
         query: str,
         ephemeral_context: bool,
         action_names: frozenset[str],
+        priority: ForcePriority = ForcePriority.LOW,
     ) -> tuple[str, str | None]:
         """Select an action and generate its data for a forced action scenario.
 
@@ -1109,6 +1110,7 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
                 query,
                 ephemeral_context,
                 frozenset(action_names),
+                priority,
             )
             success, _message = await self.submit_action(
                 action_name,
@@ -1820,6 +1822,7 @@ class TrioNeuroServerClient(BaseTrioNeuroServerClient):
         query: str,
         ephemeral_context: bool,
         action_names: frozenset[str],
+        priority: ForcePriority = ForcePriority.LOW,
     ) -> tuple[str, str | None]:
         """Delegate action selection to the parent server.
 
@@ -1831,6 +1834,7 @@ class TrioNeuroServerClient(BaseTrioNeuroServerClient):
             query (str): Instruction telling Neuro what she should accomplish.
             ephemeral_context (bool): Whether context should persist after completion.
             action_names (frozenset[str]): Set of action names Neuro must choose from.
+            priority (ForcePriority): Action force priority level.
 
         Returns:
             tuple[str, str | None]: Tuple containing:
@@ -2052,6 +2056,7 @@ class AbstractTrioNeuroServer(metaclass=ABCMeta):
         query: str,
         ephemeral_context: bool,
         actions: tuple[Action, ...],
+        priority: ForcePriority = ForcePriority.LOW,
     ) -> tuple[str, str | None]:
         """Select an action for Neuro to perform from a constrained set.
 
@@ -2076,6 +2081,7 @@ class AbstractTrioNeuroServer(metaclass=ABCMeta):
             actions (tuple[Action, ...]): Immutable sequence of Action objects
                 that Neuro must choose from. Each Action contains name,
                 description, and optional JSON schema for data validation.
+            priority (ForcePriority): Force action priority.
 
         Returns:
             tuple[str, str | None]: A tuple containing:
@@ -2505,6 +2511,7 @@ class ConsoleInteractiveNeuroServer(AbstractTrioNeuroServer):
         query: str,
         ephemeral_context: bool,
         actions: tuple[Action, ...],
+        priority: ForcePriority = ForcePriority.LOW,
     ) -> tuple[str, str | None]:
         """Prompt console operator to select an action and provide data.
 
@@ -2569,7 +2576,7 @@ class ConsoleInteractiveNeuroServer(AbstractTrioNeuroServer):
         )
 
         print(
-            f"\n\n[Force Action] {game_title = }\n{state = }\n{query = }\nOptions:\n{action_str}",
+            f"\n\n[Force Action] {game_title = }\n{state = }\n{query = }\n{priority = }\nOptions:\n{action_str}",
         )
         action = actions[int(input("Action > ")) - 1]
 

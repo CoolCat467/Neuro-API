@@ -269,6 +269,7 @@ class TestHandlerClient(AbstractHandlerNeuroServerClient):
         query: str,
         ephemeral_context: bool,
         action_names: frozenset[str],
+        priority: ForcePriority = ForcePriority.LOW,
     ) -> tuple[str, str | None]:
         return next(iter(action_names)), None
 
@@ -530,6 +531,7 @@ class TestAbstractRecordingNeuroServerClient:
                 query: str,
                 ephemeral_context: bool,
                 action_names: frozenset[str],
+                priority: ForcePriority = ForcePriority.LOW,
             ) -> tuple[str, str | None]:
                 return next(iter(action_names)), None
 
@@ -650,6 +652,7 @@ class TestBaseClient(BaseTrioNeuroServerClient):
         query: str,
         ephemeral_context: bool,
         action_names: frozenset[str],
+        priority: ForcePriority = ForcePriority.LOW,
     ) -> tuple[str, str | None]:
         return next(iter(action_names)), None
 
@@ -815,6 +818,7 @@ class TestTrioNeuroServerClient:
             "query",
             False,
             frozenset(["test_action"]),
+            ForcePriority.LOW,
         )
 
         assert result == ("action1", None)
@@ -859,6 +863,7 @@ class TestAbstractTrioNeuroServer:
                 query: str,
                 ephemeral_context: bool,
                 actions: tuple[Action, ...],
+                priority: ForcePriority = ForcePriority.LOW,
             ) -> tuple[str, str | None]:
                 return actions[0].name, None
 
@@ -1027,6 +1032,7 @@ class TestConsoleInteractiveNeuroServer:
                 "Test query",
                 False,
                 actions,
+                ForcePriority.LOW,
             )
 
         assert result == ("action1", None)
