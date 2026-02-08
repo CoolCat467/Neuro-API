@@ -156,7 +156,7 @@ def check_invalid_keys_recursive(
     for key, value in sub_schema.items():
         if key in INVALID_SCHEMA_KEYS:
             invalid_keys.append(key)
-        elif isinstance(value, (str, int, bool)):
+        elif isinstance(value, (str, int, bool, float)):
             pass
         elif isinstance(value, dict):
             # Probably not quite correct to cast to SchemaObject here,
