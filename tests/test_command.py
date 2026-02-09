@@ -346,16 +346,16 @@ def test_check_action_populous_schema() -> None:
         name="valid_action",
         description="A valid action",
         schema={
-            "type": "object", 
+            "type": "object",
             "properties": {
                 "value": {"type": "string", "enum": ["a", "b"]},
                 "count": {"type": "number", "minimum": 0.0, "maximum": 100.0},
                 "array": {
-                    "type": "array", 
-                    "items": {"type": "boolean", "const": True}, 
-                    "maxItems": 100
+                    "type": "array",
+                    "items": {"type": "boolean", "const": True},
+                    "maxItems": 100,
                 },
-            }
+            },
         },
     )
     check_action(action)
