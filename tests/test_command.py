@@ -341,6 +341,26 @@ def test_check_action_invalid_schema_key() -> None:
         check_action(action)
 
 
+def test_check_action_populous_schema() -> None:
+    action = Action(
+        name="valid_action",
+        description="A valid action",
+        schema={
+            "type": "object", 
+            "properties": {
+                "value": {"type": "string", "enum": ["a", "b"]},
+                "count": {"type": "number", "minimum": 0.0, "maximum": 100.0},
+                "array": {
+                    "type": "array", 
+                    "items": {"type": "boolean", "const": True}, 
+                    "maxItems": 100
+                },
+            }
+        },
+    )
+    check_action(action)
+
+
 def test_check_typed_dict() -> None:
     data = {
         "id": "waffles",
@@ -415,12 +435,6 @@ def test_check_typed_dict_parameterized_generic() -> None:
     }
 
     assert check_typed_dict(data, Data) == data
-
-
-# ... (keep all existing tests) ...
-
-
-# NEW TESTS - Add these to improve coverage:
 
 
 def test_format_command_no_game() -> None:
