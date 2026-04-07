@@ -326,7 +326,13 @@ async def run() -> None:
                     for idx, action in enumerate(actions):
                         print(f"{idx + 1}: {action}")
                     try:
-                        index = int(input("Your choice: "))  # noqa: ASYNC250
+                        index = int(
+                            await trio.to_thread.run_sync(
+                                input,
+                                "Your choice: ",
+                                thread_name="ask_choice",
+                            ),
+                        )
                     except ValueError:
                         print("Bad choice try again\n")
                     if index < 1 or index > len(actions):

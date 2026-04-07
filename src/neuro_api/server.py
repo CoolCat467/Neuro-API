@@ -2415,7 +2415,13 @@ class ConsoleInteractiveNeuroServer(AbstractTrioNeuroServer):
             while True:
                 try:
                     await trio.sleep(0.1)
-                    command = input("Enter command > ").strip()  # noqa: ASYNC250
+                    command = (
+                        await trio.to_thread.run_sync(
+                            input,
+                            "Enter command > ",
+                            thread_name="prompt_command",
+                        )
+                    ).strip()
                     if not command:
                         break
 
@@ -2578,7 +2584,12 @@ class ConsoleInteractiveNeuroServer(AbstractTrioNeuroServer):
         print(
             f"\n\n[Force Action] {game_title = }\n{state = }\n{query = }\n{priority = }\nOptions:\n{action_str}",
         )
-        action = actions[int(input("Action > ")) - 1]  # noqa: ASYNC250
+        action_id_str = await trio.to_thread.run_sync(
+            input,
+            "Action > ",
+            thread_name="prompt_action_id",
+        )
+        action = actions[int(action_id_str) - 1]
 
         # Handle other tasks
         await trio.lowlevel.checkpoint()
