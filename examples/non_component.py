@@ -6,7 +6,7 @@ from __future__ import annotations
 
 # Example Game
 # MIT License
-# Copyright (c) 2025 CoolCat467
+# Copyright (c) 2025-2026 CoolCat467
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -46,7 +46,7 @@ from neuro_api.trio_ws import TrioNeuroAPI
 
 # Things we need imported for type checking reasons but not at runtime
 if TYPE_CHECKING:
-    from neuro_api.api import NeuroAction
+    from neuro_api.api import NeuroAction, NeuroStartupData
 
 # For compatibility with Python versions below 3.11, use the backported
 # ExceptionGroup
@@ -92,6 +92,29 @@ class API(TrioNeuroAPI):
             ["set_name"],
             ephemeral_context=False,
         )
+
+    async def handle_startup_acknowledgement(
+        self,
+        startup_ack: NeuroStartupData,
+    ) -> None:
+        """Handle startup acknowledgement data from Neuro."""
+        session = startup_ack.session
+        print(f"""INFO: Got startup acknowledgement data:
+    {session.session_id = }
+    {session.character_id = }
+    {session.display_name = }""")
+
+        # Presumably you could do things like record
+        # `session.display_name` somewhere for on-screen titles, like
+        # for displaying player names or something, adding
+        # `session.session_id` for all log entries, and it's a bit iffy
+        # but maybe even custom functionality depending on
+        # `session.character_id`, like only Neuro can do one action and
+        # Evil can't, but personally that sounds like a great way for
+        # things to go wrong so probably don't. The docs do claim this
+        # character id should be stable though, so maybe use it for save
+        # profile prefixes if both of the twins want to play a
+        # singleplayer game separately?
 
     async def handle_action(self, action: NeuroAction) -> None:
         """Handle an Action from Neuro."""

@@ -526,6 +526,13 @@ async def run() -> None:
 
         __slots__ = ()
 
+        async def handle_startup_acknowledgement(
+            self,
+            startup_ack: NeuroStartupData,
+        ) -> None:
+            """Handle startup acknowledgement data from Neuro."""
+            print(f"{startup_ack = }")
+
         async def handle_action(self, action: NeuroAction) -> None:
             """Handle action."""
             print(f"{action = }")

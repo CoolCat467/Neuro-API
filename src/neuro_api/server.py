@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 # Server - Neuro Websocket API Server Implementation
-# Copyright (C) 2025  CoolCat467
+# Copyright (C) 2025-2026  CoolCat467
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -234,6 +234,33 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
 
         """
 
+    async def send_setup_acknowledgement_command(
+        self,
+        session_id: str,
+        character_id: str,
+        display_name: str,
+    ) -> None:
+        """Send a startup acknowledgement command to the client.
+
+        The server may send this message in response to the client
+        sending a `startup` command, telling the client metadata about
+        the session.
+
+        Args:
+            session_id (str): The server's websocket session identifier.
+                Treat this as an opaque routing/debug value.
+            character_id (str): The stable character identifier, e.g. "neuro".
+            display_name (str): The human-readable character name.
+
+        """
+        await self.send_command_data(
+            command.startup_acknowledgement_command(
+                session_id,
+                character_id,
+                display_name,
+            ),
+        )
+
     async def send_action_command(
         self,
         name: str,
@@ -327,7 +354,8 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
 
         This method is responsible for initializing the client's state
         when a game starts. It MUST clear all previously registered
-        actions for this specific client.
+        actions for this specific client, and may send a startup
+        acknowledgement with `send_setup_acknowledgement_command`.
 
         Args:
             game_title (str): The title of the game being started.
@@ -779,12 +807,36 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
                 f"Attempted to change game title from {self.game_title!r} to {game_title!r}, not allowed",
             )
 
+    @abstractmethod
+    def get_websocket_session_id(self) -> str:
+        """Return websocket session identifier for the setup acknowledgement response."""
+
+    @abstractmethod
+    def get_character_id(self) -> str:
+        """Return stable character identifier for the setup acknowledgement response."""
+
+    def get_display_name(self) -> str:
+        """Return human readable character name the setup acknowledgement response.
+
+        Default implementation takes the result from `get_character_id`,
+        replaces `-` and `_` with spaces and puts everything in title
+        case.
+        """
+        character_id = self.get_character_id()
+        return character_id.replace("-", " ").replace("_", " ").title()
+
     async def handle_startup(self, game_title: str) -> None:  # noqa: D102
         if self.game_title is None:
             self.game_title = game_title
         self.check_game_title(game_title)
 
         self.clear_registered_actions()
+
+        await self.send_setup_acknowledgement_command(
+            self.get_websocket_session_id(),
+            self.get_character_id(),
+            self.get_display_name(),
+        )
 
     @abstractmethod
     def add_context(self, message: str, reply_if_not_busy: bool) -> None:
@@ -1692,12 +1744,13 @@ class TrioNeuroServerClient(BaseTrioNeuroServerClient):
 
     """
 
-    __slots__ = ("_server_ref",)
+    __slots__ = ("_server_ref", "websocket_session_id")
 
     def __init__(
         self,
         websocket: WebSocketConnection,
         server: AbstractTrioNeuroServer,
+        websocket_session_id: str,
     ) -> None:
         """Initialize the Trio Neuro Server Client with server integration.
 
@@ -1710,6 +1763,8 @@ class TrioNeuroServerClient(BaseTrioNeuroServerClient):
             server (AbstractTrioNeuroServer): The parent Neuro server instance
                 that will handle AI operations, context management, and action
                 selection for this client.
+            websocket_session_id (str): Websocket session id for setup
+                acknowledgement responses.
 
         Note:
             - Creates a weak reference to the server to prevent circular references
@@ -1720,6 +1775,10 @@ class TrioNeuroServerClient(BaseTrioNeuroServerClient):
         """
         super().__init__(websocket)
         self._server_ref = weakref.ref(server)
+        self.websocket_session_id = websocket_session_id
+
+    def get_websocket_session_id(self) -> str:  # noqa: D102
+        return self.websocket_session_id
 
     @property
     def server(self) -> AbstractTrioNeuroServer:
@@ -1756,6 +1815,9 @@ class TrioNeuroServerClient(BaseTrioNeuroServerClient):
             raise ValueError("Reference to server is dead.")
         return value
 
+    def get_character_id(self) -> str:  # noqa: D102
+        return self.server.character_id
+
     def log_warning(self, message: str) -> None:
         """Log a warning message with client identification context.
 
@@ -1787,7 +1849,10 @@ class TrioNeuroServerClient(BaseTrioNeuroServerClient):
         remote = self.websocket.remote
         if not isinstance(remote, str):
             remote = f"{remote.address}:{remote.port}"
-        self.server.log_warning(f"[{self.game_title} ({remote})] {message}")
+        session_info = f"{self.websocket.CONNECTION_ID} {remote}"
+        self.server.log_warning(
+            f"[{self.game_title} ({session_info})] {message}",
+        )
 
     def add_context(self, message: str, reply_if_not_busy: bool) -> None:
         """Add contextual information to Neuro's understanding.
@@ -1939,15 +2004,19 @@ class AbstractTrioNeuroServer(metaclass=ABCMeta):
 
     __slots__ = (
         "__weakref__",
+        "character_id",
         "clients",
         "handler_nursery",
     )
 
-    def __init__(self) -> None:
+    def __init__(self, character_id: str) -> None:
         """Initialize the abstract Neuro server with default state.
 
         Sets up the basic server infrastructure including client registry
         and prepares for nursery assignment during server startup.
+
+        Arguments:
+            character_id (str): Stable character id for setup acknowledgement responses.
 
         Note:
             - Creates empty client registry for connection tracking
@@ -1957,6 +2026,7 @@ class AbstractTrioNeuroServer(metaclass=ABCMeta):
         """
         self.clients: dict[str, TrioNeuroServerClient] = {}
         self.handler_nursery: trio.Nursery
+        self.character_id = character_id
 
     def log_info(self, message: str) -> None:
         """Log an informational message to the console.
@@ -2258,13 +2328,19 @@ class AbstractTrioNeuroServer(metaclass=ABCMeta):
         if not isinstance(remote, str):
             remote = f"{remote.address}:{remote.port}"
 
+        websocket_session_id = f"{websocket.CONNECTION_ID} {remote}"
+
         self.log_info(
             f"Accepted connection request ({remote})",
         )
         # Start running connection read and write tasks in the background
         try:
             async with websocket:
-                client = TrioNeuroServerClient(websocket, self)
+                client = TrioNeuroServerClient(
+                    websocket,
+                    self,
+                    websocket_session_id,
+                )
                 self.clients[remote] = client
 
                 while True:
@@ -2308,7 +2384,7 @@ class ConsoleInteractiveNeuroServer(AbstractTrioNeuroServer):
         - Suitable only for development and demonstration environments
 
     Example Usage:
-        >>> server = ConsoleInteractiveNeuroServer()
+        >>> server = ConsoleInteractiveNeuroServer("console_server")
         >>> await server.run("localhost", 8000)
         >>> # Server will prompt operator for all AI decisions via console
 
@@ -2316,8 +2392,8 @@ class ConsoleInteractiveNeuroServer(AbstractTrioNeuroServer):
 
     __slots__ = ("console_command_lock",)
 
-    def __init__(self) -> None:  # noqa: D107
-        super().__init__()
+    def __init__(self, character_id: str) -> None:  # noqa: D107
+        super().__init__(character_id)
         self.console_command_lock = trio.Lock()
 
     def add_context(
@@ -2490,13 +2566,19 @@ class ConsoleInteractiveNeuroServer(AbstractTrioNeuroServer):
         if not isinstance(remote, str):
             remote = f"{remote.address}:{remote.port}"
 
+        websocket_session_id = f"{websocket.CONNECTION_ID} {remote}"
+
         self.log_info(
             f"Accepted connection request ({remote})",
         )
         # Start running connection read and write tasks in the background
         try:
             async with websocket:
-                client = TrioNeuroServerClient(websocket, self)
+                client = TrioNeuroServerClient(
+                    websocket,
+                    self,
+                    websocket_session_id,
+                )
                 self.clients[remote] = client
 
                 while True:
@@ -2598,12 +2680,16 @@ class ConsoleInteractiveNeuroServer(AbstractTrioNeuroServer):
         return action.name, json_blob
 
 
-async def run_development_server() -> None:
+async def run_development_server(character_id: str) -> None:
     """Start the development server with exception handling.
 
     Initializes and runs the console interactive Neuro server for
     development and testing purposes. Includes proper exception handling
     and logging.
+
+    Arguments:
+        character_id (str): Stable character identifier for startup
+            acknowledgement responses.
 
     Behavior:
         - Creates a ConsoleInteractiveNeuroServer instance
@@ -2617,7 +2703,7 @@ async def run_development_server() -> None:
         - Exception logging helps debug server and client issues
 
     """
-    server = ConsoleInteractiveNeuroServer()
+    server = ConsoleInteractiveNeuroServer(character_id)
     try:
         await server.run("localhost", 8000)
     except BaseExceptionGroup:
@@ -2643,7 +2729,7 @@ def run() -> None:
 
     """
     print(f"{__title__} v{__version__}\nProgrammed by {__author__}.\n")
-    trio.run(run_development_server)
+    trio.run(run_development_server, "console_development_server")
 
 
 if __name__ == "__main__":

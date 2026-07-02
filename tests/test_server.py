@@ -257,6 +257,12 @@ class TestHandlerClient(AbstractHandlerNeuroServerClient):
         self.context_messages: list[tuple[str, bool]] = []
         self.registered_actions: dict[str, Action] = {}
 
+    def get_character_id(self) -> str:
+        return "test_handler_server_client"
+
+    def get_websocket_session_id(self) -> str:
+        return "probably per-connection unique session id number"
+
     async def write_to_websocket(self, data: str) -> None:
         self.sent_data.append(data.encode())
 
@@ -528,6 +534,12 @@ class TestAbstractRecordingNeuroServerClient:
                 self.sent_data: list[bytes] = []
                 self.context_messages: list[tuple[str, bool]] = []
 
+            def get_character_id(self) -> str:
+                return "test_handler_server_client"
+
+            def get_websocket_session_id(self) -> str:
+                return "probably per-connection unique session id number"
+
             async def write_to_websocket(self, data: str) -> None:
                 self.sent_data.append(data.encode())
 
@@ -655,6 +667,12 @@ class TestBaseClient(BaseTrioNeuroServerClient):
         super().__init__(websocket)
         self.websocket: Mock  # type: ignore[mutable-override]
 
+    def get_character_id(self) -> str:
+        return "test_handler_server_client"
+
+    def get_websocket_session_id(self) -> str:
+        return "probably per-connection unique session id number"
+
     def add_context(
         self,
         message: str,
@@ -748,7 +766,11 @@ class TestTrioNeuroServerClient:
         mock_server: Mock,
     ) -> TrioNeuroServerClient:
         """Create a TrioNeuroServerClient for testing."""
-        return TrioNeuroServerClient(mock_websocket, mock_server)
+        return TrioNeuroServerClient(
+            mock_websocket,
+            mock_server,
+            "websocket id",
+        )
 
     def test_server_property_valid(
         self,
@@ -765,7 +787,11 @@ class TestTrioNeuroServerClient:
         mock_server: Mock,
     ) -> None:
         """Test server property with dead weak reference."""
-        client = TrioNeuroServerClient(mock_websocket, mock_server)
+        client = TrioNeuroServerClient(
+            mock_websocket,
+            mock_server,
+            "websocket id",
+        )
         # Manually break the weak reference
         client._server_ref = weakref.ref(
             lambda: None,  # type: ignore[arg-type]
@@ -786,20 +812,20 @@ class TestTrioNeuroServerClient:
         trio_client.log_warning("Test warning")
 
         mock_server.log_warning.assert_called_once_with(
-            "[Test Game (127.0.0.1:12345)] Test warning",
+            f"[Test Game ({trio_client.websocket.CONNECTION_ID} 127.0.0.1:12345)] Test warning",
         )
 
     def test_log_warning_string_remote(self, mock_server: Mock) -> None:
         """Test log_warning with string remote address."""
         mock_ws = Mock()
         mock_ws.remote = "string_remote"
-        client = TrioNeuroServerClient(mock_ws, mock_server)
+        client = TrioNeuroServerClient(mock_ws, mock_server, "websocket id")
         client.game_title = "Test Game"
 
         client.log_warning("Test warning")
 
         mock_server.log_warning.assert_called_once_with(
-            "[Test Game (string_remote)] Test warning",
+            f"[Test Game ({client.websocket.CONNECTION_ID} string_remote)] Test warning",
         )
 
     def test_add_context(
@@ -883,7 +909,7 @@ class TestAbstractTrioNeuroServer:
             ) -> tuple[str, str | None]:
                 return actions[0].name, None
 
-        return TestServer()
+        return TestServer("test_server")
 
     def test_log_methods(
         self,
@@ -928,7 +954,7 @@ class TestConsoleInteractiveNeuroServer:
     @pytest.fixture
     def console_server(self) -> ConsoleInteractiveNeuroServer:
         """Create a console server for testing."""
-        return ConsoleInteractiveNeuroServer()
+        return ConsoleInteractiveNeuroServer("test_interactive_console_server")
 
     def test_add_context(
         self,

@@ -30,12 +30,12 @@ from typing import TYPE_CHECKING
 
 from libcomponent.component import Component, Event
 
-from neuro_api.api import AbstractNeuroAPI, NeuroAction
+from neuro_api.api import AbstractNeuroAPI, NeuroAction, NeuroStartupData
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable
 
-    from neuro_api.command import Action, NeuroStartupData
+    from neuro_api.command import Action
 
 
 class AbstractNeuroAPIComponent(Component, AbstractNeuroAPI):
