@@ -27,6 +27,7 @@ from neuro_api.command import (
     shutdown_graceful_command,
     shutdown_immediate_command,
     shutdown_ready_command,
+    startup_acknowledgement_command,
     startup_command,
 )
 from neuro_api.json_schema_types import SchemaObject
@@ -524,7 +525,18 @@ def test_actions_force_command_empty_assertion() -> None:
         actions_force_command(game, state, query, action_names)
 
 
-# NEW SERVER-TO-CLIENT COMMANDS:
+def test_startup_acknowledgement_command() -> None:
+    """Test server-to-client startup acknowledgement command."""
+    session_id = "session-id-data-uuid-probably"
+    character_id = "test_character"
+    display_name = "Tester Jester"
+
+    expected_output = b'{"command":"startup","data":{"session":{"sessionId":"session-id-data-uuid-probably","characterId":"test_character","displayName":"Tester Jester"}}}'
+
+    assert (
+        startup_acknowledgement_command(session_id, character_id, display_name)
+        == expected_output
+    )
 
 
 def test_action_command() -> None:
@@ -573,9 +585,6 @@ def test_shutdown_immediate_command() -> None:
     assert shutdown_immediate_command() == expected_output
 
 
-# TYPE CONVERSION TESTS:
-
-
 def test_convert_parameterized_generic_nonunion_generic_alias() -> None:
     """Test convert_parameterized_generic_nonunion with GenericAlias."""
     generic = list[str]
@@ -613,9 +622,6 @@ def test_convert_parameterized_generic() -> None:
     # Test with UnionType
     result = convert_parameterized_generic(str | int)
     assert result == (str, int)
-
-
-# NEW TESTS FOR BETTER COVERAGE:
 
 
 def test_check_typed_dict_name_error() -> None:

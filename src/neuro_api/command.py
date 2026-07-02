@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 # Command - Neuro API Commands
-# Copyright (C) 2025  CoolCat467
+# Copyright (C) 2025-2026  CoolCat467
 #
 #     This program is free software: you can redistribute it and/or
 #     modify it under the terms of the GNU Lesser General Public License
@@ -520,6 +520,42 @@ def shutdown_ready_command(game: str) -> bytes:
     )
 
 
+def startup_acknowledgement_command(
+    session_id: str,
+    character_id: str,
+    display_name: str,
+) -> bytes:
+    """Return formatted startup acknowledgement command.
+
+    Server to Client command.
+
+    This message may be sent by Neuro in response to the game's startup
+    message. It tells the game which character the websocket has been
+    connected to.
+
+    Args:
+        session_id (str): The server's websocket session identifier.
+            Treat this as an opaque routing/debug value.
+        character_id (str): The stable character identifier, e.g. "neuro".
+        display_name (str): The human-readable character name.
+
+    Returns:
+        bytes: A formatted command to attempt to execute the registered
+            action.
+
+    """
+    return format_command(
+        "startup",
+        data={
+            "session": {
+                "sessionId": session_id,
+                "characterId": character_id,
+                "displayName": display_name,
+            },
+        },
+    )
+
+
 def action_command(
     id_: str,
     name: str,
@@ -848,6 +884,47 @@ def check_typed_dict(data: Mapping[str, object], typed_dict: type[T]) -> T:
                 )
 
     return typed_dict(data)  # type: ignore[call-arg]
+
+
+class IncomingStartupAcknowledgementSessionSchema(TypedDict):
+    """Schema for incoming 'startup' acknowledgement session data.
+
+    Represents the structure of an startup acknowledgement session data
+    as specified in the Neuro Game SDK API documentation.
+
+    Attributes:
+        sessionId (str): The server's websocket session identifier.
+            Treat this as an opaque routing/debug value.
+        characterId (str): The stable character identifier, e.g. "neuro".
+        displayName (str): The human-readable character name.
+
+    Reference:
+        Specification details:
+        https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#startup-acknowledgement
+
+    """
+
+    sessionId: str
+    characterId: str
+    displayName: str
+
+
+class IncomingStartupAcknowledgementSchema(TypedDict):
+    """Schema for incoming 'startup' acknowledgement message fields.
+
+    Represents the structure of an startup acknowledgement as specified
+    in the Neuro Game SDK API documentation.
+
+    Attributes:
+        session (IncomingStartupAcknowledgementSessionSchema): Session data
+
+    Reference:
+        Specification details:
+        https://github.com/VedalAI/neuro-game-sdk/blob/main/API/SPECIFICATION.md#startup-acknowledgement
+
+    """
+
+    session: IncomingStartupAcknowledgementSessionSchema
 
 
 class IncomingActionMessageSchema(TypedDict):

@@ -6,7 +6,12 @@ import pytest
 import trio_websocket
 
 from neuro_api import command
-from neuro_api.api import AbstractNeuroAPI, NeuroAction
+from neuro_api.api import (
+    AbstractNeuroAPI,
+    NeuroAction,
+    NeuroSessionData,
+    NeuroStartupData,
+)
 from neuro_api.command import Action
 
 
@@ -21,6 +26,12 @@ async def neuro_api() -> tuple[AbstractNeuroAPI, AsyncMock]:
             super().__init__(game_title)
             self._websocket = websocket
 
+        async def handle_startup_acknowledgement(
+            self,
+            startup_ack: NeuroStartupData,
+        ) -> None:
+            """Mock implementation for testing."""
+
         async def handle_action(self, action: NeuroAction) -> None:
             """Mock implementation for testing."""
 
@@ -32,6 +43,18 @@ async def neuro_api() -> tuple[AbstractNeuroAPI, AsyncMock]:
 
     api = TestNeuroAPI("Test Game")
     return api, websocket
+
+
+@pytest.mark.trio
+async def test_send_startup_acknowlagement_data(
+    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+) -> None:
+    api, websocket = neuro_api
+    websocket.send_message = AsyncMock()
+
+    await api.send_command_data(b"test command")
+
+    websocket.send_message.assert_awaited_once_with("test command")
 
 
 @pytest.mark.trio
@@ -444,6 +467,34 @@ async def test_read_message_immediate_shutdown(
     await api.read_message()
 
     api.handle_immediate_shutdown.assert_awaited_once()
+
+
+@pytest.mark.trio
+async def test_read_message_setup_acknowledgement_command(
+    neuro_api: tuple[AbstractNeuroAPI, AsyncMock],
+) -> None:
+    api, _ = neuro_api
+    api.read_raw_server_message = AsyncMock(  # type: ignore[method-assign]
+        return_value=(
+            "startup",
+            {
+                "session": {
+                    "sessionId": "session id",
+                    "characterId": "test_character",
+                    "displayName": "Tester Jester",
+                },
+            },
+        ),
+    )
+    api.handle_startup_acknowledgement = AsyncMock()  # type: ignore[method-assign]
+
+    await api.read_message()
+
+    api.handle_startup_acknowledgement.assert_awaited_once_with(
+        NeuroStartupData(
+            NeuroSessionData("session id", "test_character", "Tester Jester"),
+        ),
+    )
 
 
 @pytest.mark.trio

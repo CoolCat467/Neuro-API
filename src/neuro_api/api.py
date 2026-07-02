@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 # API - Neuro API Game Client
-# Copyright (C) 2025  CoolCat467
+# Copyright (C) 2025-2026  CoolCat467
 #
 #     This program is free software: you can redistribute it and/or
 #     modify it under the terms of the GNU Lesser General Public License
@@ -23,7 +23,7 @@ from __future__ import annotations
 
 __title__ = "api"
 __author__ = "CoolCat467"
-__version__ = "3.2.0"
+__version__ = "4.0.0"
 __license__ = "GNU Lesser General Public License Version 3"
 
 
@@ -37,6 +37,28 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from neuro_api.json_schema_types import SchemaObject
+
+
+class NeuroSessionData(NamedTuple):
+    """Neuro startup session data.
+
+    Attributes:
+        session_id (str): The server's websocket session identifier.
+            Treat this as an opaque routing/debug value.
+        character_id (str): The stable character identifier, e.g. "neuro".
+        display_name (str): The human-readable character name.
+
+    """
+
+    session_id: str
+    character_id: str
+    display_name: str
+
+
+class NeuroStartupData(NamedTuple):
+    """Neuro startup data."""
+
+    session: NeuroSessionData
 
 
 class NeuroAction(NamedTuple):
@@ -392,6 +414,19 @@ class AbstractNeuroAPI(AbstractNeuroAPIClient):
         )
 
     @abstractmethod
+    async def handle_startup_acknowledgement(
+        self,
+        startup_ack: NeuroStartupData,
+    ) -> None:
+        """Handle startup acknowledgement data from Neuro.
+
+        Args:
+            startup_ack (NeuroStartupData): Parsed Neuro startup
+                acknowledgement data.
+
+        """
+
+    @abstractmethod
     async def handle_action(self, action: NeuroAction) -> None:
         """Handle an Action request from Neuro.
 
@@ -490,7 +525,23 @@ class AbstractNeuroAPI(AbstractNeuroAPIClient):
         """
         # Read message from server
         command_type, data = await self.read_raw_server_message()
-        if command_type == "action":
+        if command_type == "startup":
+            assert data is not None
+            startup_data = command.check_typed_dict(
+                data,
+                command.IncomingStartupAcknowledgementSchema,
+            )
+            session_data = startup_data["session"]
+            await self.handle_startup_acknowledgement(
+                NeuroStartupData(
+                    NeuroSessionData(
+                        session_data["sessionId"],
+                        session_data["characterId"],
+                        session_data["displayName"],
+                    ),
+                ),
+            )
+        elif command_type == "action":
             assert data is not None
             action_data = command.check_typed_dict(
                 data,

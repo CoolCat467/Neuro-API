@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 # Event - Neuro API Component
-# Copyright (C) 2025  CoolCat467
+# Copyright (C) 2025-2026  CoolCat467
 #
 #     This program is free software: you can redistribute it and/or
 #     modify it under the terms of the GNU Lesser General Public License
@@ -35,7 +35,7 @@ from neuro_api.api import AbstractNeuroAPI, NeuroAction
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable
 
-    from neuro_api.command import Action
+    from neuro_api.command import Action, NeuroStartupData
 
 
 class AbstractNeuroAPIComponent(Component, AbstractNeuroAPI):
@@ -259,6 +259,28 @@ class AbstractNeuroAPIComponent(Component, AbstractNeuroAPI):
         await self.register_neuro_actions(
             (action, unregister_wrapper(handler))
             for action, handler in action_handlers
+        )
+
+    async def handle_startup_acknowledgement(
+        self,
+        startup_ack: NeuroStartupData,
+    ) -> None:
+        """Handle startup acknowledgement data from Neuro.
+
+        Processes Neuro startup acknowledgement data by raising a
+        `neuro_startup_acknowledgement` event.
+
+        Args:
+            startup_ack (NeuroStartupData): Parsed Neuro startup
+                acknowledgement data.
+
+        """
+        event_name = "neuro_startup_acknowledgement"
+        await self.raise_event(
+            Event(
+                event_name,
+                startup_ack,
+            ),
         )
 
     async def handle_action(self, neuro_action: NeuroAction) -> None:
