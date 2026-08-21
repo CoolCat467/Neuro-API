@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 # Client - Neuro API Websocket Client.
-# Copyright (C) 2025  CoolCat467
+# Copyright (C) 2025-2026  CoolCat467
 #
 #     This program is free software: you can redistribute it and/or
 #     modify it under the terms of the GNU Lesser General Public License
@@ -213,7 +213,7 @@ class AbstractNeuroAPIClient(metaclass=ABCMeta):
 
         """
         print(
-            f"[neuro_api.api] Received unknown command {command!r} {data = }",
+            f"[neuro_api.client] Received unknown command {command!r} {data = }",
         )
 
     async def read_message(self) -> None:

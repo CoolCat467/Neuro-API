@@ -589,6 +589,35 @@ def action_command(
     return format_command("action", data=command_data)
 
 
+def speech_finished_command(
+    final: bool,
+    canceled_reason: str | None = None,
+) -> bytes:
+    """Return formatted speech_finished command.
+
+    Server to Client command.
+
+    Update speech status.
+
+    Args:
+        final (bool): Whether Neuro has finished what she is currently saying.
+        canceled_reason (str | None):
+            If not `None`, MUST be a short description of why Neuro's
+            speech has been cancelled (e.g. "interrupted").
+
+    Returns:
+        bytes: A formatted speech_finished command.
+
+    """
+    command_data: dict[str, str | bool] = {
+        "isFinal": final,
+    }
+    if canceled_reason is not None:
+        command_data["cancelled"] = True
+        command_data["reason"] = canceled_reason
+    return format_command("speech_finished", data=command_data)
+
+
 def reregister_all_command() -> bytes:
     """Return formatted actions/reregister_all command.
 
@@ -948,6 +977,33 @@ class IncomingActionMessageSchema(TypedDict):
     id: str
     name: str
     data: NotRequired[str]
+
+
+class IncomingSpeechFinishedMessageSchema(TypedDict):
+    """Schema for incoming 'speech_finished' command message fields.
+
+    Represents the structure of a speech finished message as specified
+    in the Neuro Game SDK API documentation.
+
+    Attributes:
+        isFinal (bool):
+            Whether neuro has finished what she is currently saying.
+        cancelled (bool, optional):
+            Set to True if neuro's speech was cut off instead of
+            completing normally.
+        reason (str, optional):
+            If cancelled, a short description of why (e.g.
+            "interrupted").
+
+    Reference:
+        Specification details:
+        https://github.com/VedalAI/neuro-sdk/blob/main/API/SPECIFICATION.md#speech-finished
+
+    """
+
+    isFinal: bool
+    cancelled: NotRequired[bool]
+    reason: NotRequired[str]
 
 
 def check_action(action: Action) -> None:

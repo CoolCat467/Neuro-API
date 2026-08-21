@@ -30,7 +30,7 @@ import traceback
 import weakref
 from abc import ABCMeta, abstractmethod
 from functools import partial
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypedDict, cast
 from uuid import UUID
 
 import trio
@@ -290,6 +290,52 @@ class AbstractNeuroServerClient(AbstractNeuroAPIClient):
             ),
         )
         return id_
+
+    async def send_speech_finished_command(
+        self,
+        final: bool,
+        canceled_reason: str | None = None,
+    ) -> None:
+        """Send a speech status update.
+
+        Server LLM text to speech should send updates whenever its state
+        changes, ie sending `final = False` when it starts talking,
+        `final = True` when it finishes talking, and setting
+        `canceled_reason` to a reason message whenever it cancels before
+        finishing normally, e.g. when interrupted by a force action with
+        high or critical priority.
+
+        I would highly recommend building this into a
+        ``contextlib.asynccontextmanager``.
+
+        Args:
+            final (bool):
+                Whether server text to speech has finished their current
+                speech block.
+            canceled_reason (str | None):
+                If not `None`, MUST be a short description of why server
+                text to speech speech has been cancelled (e.g.
+                "interrupted").
+
+        Example:
+        >>> async def speech_updates(server: AbstractNeuroServerClient) -> AsyncGenerator[None]:
+        ...     await server.send_speech_finished_command(False)
+        ...     try:
+        ...         yield
+        ...     except TTSException:
+        ...         await server.send_speech_finished_command(True, "TTS library error text")
+        ...     except ForceActionPriorityInterrupt:
+        ...         await server.send_speech_finished_command(True, "interrupted")
+        ...     else:
+        ...         await server.send_speech_finished_command(True)
+
+        """
+        await self.send_command_data(
+            command.speech_finished_command(
+                final,
+                canceled_reason,
+            ),
+        )
 
     async def send_reregister_all_command(self) -> None:
         """Send a command to the client to unregister and reregister all actions.
@@ -726,6 +772,9 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
         "game_title",
     )
 
+    """Max time to wait for an action result before giving up."""
+    ACTION_RESULT_MOVE_ON_AFTER: ClassVar[int] = 30
+
     def __init__(self) -> None:
         """Initialize the Neuro Server Client with default state.
 
@@ -934,6 +983,31 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
         for action_name in action_names:
             self.unregister_action(action_name)
 
+    async def wait_for_action_result_channel(
+        self,
+        channel: trio.MemoryReceiveChannel[tuple[bool, str | None]],
+    ) -> tuple[bool, str | None]:
+        """Return action results from channel or give up after too long.
+
+        https://github.com/VedalAI/neuro-sdk/blob/main/API/SPECIFICATION.md#action-result
+        says that the official server waits for "about 30 seconds" before
+        giving up, treating the action as failed, and discards any results.
+
+        For "treating the action as failed", I assume that means
+        stopping the force action, opened
+        https://github.com/VedalAI/neuro-sdk/issues/93 to clarify.
+
+        Returns True and an error message if the server has been waiting
+        for an `action/result` message for more than `self.ACTION_RESULT_MOVE_ON_AFTER` seconds.
+        """
+        with trio.move_on_after(self.ACTION_RESULT_MOVE_ON_AFTER):
+            return await channel.receive()
+        game_title = self.game_title or "untitled"
+        return (
+            True,
+            f"{game_title} took longer than {self.ACTION_RESULT_MOVE_ON_AFTER} seconds to respond",
+        )
+
     async def submit_action(
         self,
         name: str,
@@ -982,9 +1056,12 @@ class AbstractHandlerNeuroServerClient(AbstractNeuroServerClient):
         async with send, recv:
             # Record send channel for handle_action_result
             self._pending_actions[action_id] = send
+
             try:
                 # Wait for result in receive channel
-                success, message = await recv.receive()
+                success, message = await self.wait_for_action_result_channel(
+                    recv,
+                )
             finally:
                 # Ensure cleanup even if an exception occurs
                 self._pending_actions.pop(action_id, None)
@@ -2275,6 +2352,7 @@ class AbstractTrioNeuroServer(metaclass=ABCMeta):
         self.log_info(
             f"Client connection request from {remote}",
         )
+        # request.path
         # Accept connection
         await self.handle_client_connection(
             await request.accept(),

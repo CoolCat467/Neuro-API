@@ -83,6 +83,26 @@ class NeuroAction(NamedTuple):
     data: str | None
 
 
+class NeuroSpeechStatus(NamedTuple):
+    """Neuro `speech_finished` command data.
+
+    Attributes:
+        final (bool):
+            Whether neuro has finished what she is currently saying.
+        cancelled (bool):
+            True if neuro's speech was cut off instead of completing
+            normally.
+        reason (str | None):
+            Short description why speech was interrupted if `cancelled`
+            is True, e.g. "interrupted"
+
+    """
+
+    final: bool
+    cancelled: bool
+    reason: str | None
+
+
 class AbstractNeuroAPI(AbstractNeuroAPIClient):
     """Abstract base class for the Neuro Game Interaction API.
 
@@ -440,6 +460,15 @@ class AbstractNeuroAPI(AbstractNeuroAPIClient):
 
         """
 
+    async def handle_speech_finished(self, status: NeuroSpeechStatus) -> None:
+        """Handle a `speech_finished` command from Neuro.
+
+        Args:
+            status (NeuroSpeechStatus):
+                Parsed `speech_finished` command data.
+
+        """
+
     async def handle_graceful_shutdown_request(
         self,
         wants_shutdown: bool,
@@ -512,6 +541,8 @@ class AbstractNeuroAPI(AbstractNeuroAPIClient):
 
         Calls ``handle_action`` for `action` commands.
 
+        Calls ``handle_speech_finished`` for `speech_finished` commands.
+
         Calls ``handle_unknown_command`` for any other command.
 
         Raises:
@@ -552,6 +583,19 @@ class AbstractNeuroAPI(AbstractNeuroAPIClient):
                     action_data["id"],
                     action_data["name"],
                     action_data.get("data"),
+                ),
+            )
+        elif command_type == "speech_finished":
+            assert data is not None
+            speech_data = command.check_typed_dict(
+                data,
+                command.IncomingSpeechFinishedMessageSchema,
+            )
+            await self.handle_speech_finished(
+                NeuroSpeechStatus(
+                    speech_data["isFinal"],
+                    speech_data.get("cancelled", False),
+                    speech_data.get("reason"),
                 ),
             )
         elif command_type == "actions/reregister_all":
