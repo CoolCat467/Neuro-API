@@ -239,7 +239,7 @@ async def test_handle_unknown_command(
 
     captured = capsys.readouterr()
     assert (
-        "[neuro_api.api] Received unknown command 'unknown_command'"
+        "[neuro_api.client] Received unknown command 'unknown_command'"
         in captured.out
     )
     assert "data = {'test': 'data'}" in captured.out
@@ -256,7 +256,7 @@ async def test_handle_unknown_command_no_data(
 
     captured = capsys.readouterr()
     assert (
-        "[neuro_api.api] Received unknown command 'unknown_command'"
+        "[neuro_api.client] Received unknown command 'unknown_command'"
         in captured.out
     )
     assert "data = None" in captured.out

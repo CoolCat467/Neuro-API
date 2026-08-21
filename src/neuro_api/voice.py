@@ -27,7 +27,6 @@ __license__ = "GNU General Public License Version 3"
 
 import struct
 from abc import abstractmethod
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, TypeAlias, override
 from urllib.parse import quote
 
@@ -36,7 +35,7 @@ from neuro_api.client import AbstractNeuroAPIClient
 from neuro_api.command import check_typed_dict
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
 
 
 def derive_voice_url(base_url: str, game: str) -> str:
@@ -80,16 +79,16 @@ def derive_voice_url(base_url: str, game: str) -> str:
 try:
     import numpy as np
 
-    SampleFormat: TypeAlias = (
-        Sequence[float] | np.ndarray[tuple[int], np.dtype[np.float32]]
-    )
+    if TYPE_CHECKING:
+        NumpySamples: TypeAlias = np.ndarray[tuple[int], np.dtype[np.float32]]  # type: ignore[no-any-unimported,unused-ignore]
+        Samples: TypeAlias = Sequence[float] | NumpySamples
 
     def to_wire_format(
-        samples: SampleFormat,
+        samples: Samples,
         sample_rate: int,
         channels: int,
         wire_sample_rate: int,
-    ) -> SampleFormat:
+    ) -> Samples:
         """Return samples converted to wire format.
 
         Convert given samples at given sample rate and number of channels to
@@ -98,7 +97,7 @@ try:
         if channels < 1 or sample_rate < 1:
             return np.zeros(0, dtype=np.float32)
 
-        mono: Sequence[float] | np.ndarray[tuple[int], np.dtype[np.float32]]
+        mono: Samples
         if channels > 1:
             frames = len(samples) // channels
             mono = np.zeros(frames, dtype=np.float32)
@@ -127,11 +126,11 @@ try:
 except ImportError:
 
     def to_wire_format(
-        samples: SampleFormat,
+        samples: Samples,
         sample_rate: int,
         channels: int,
         wire_sample_rate: int,
-    ) -> SampleFormat:
+    ) -> Samples:
         """Return samples converted to wire format.
 
         Convert given samples at given sample rate and number of channels to
@@ -169,7 +168,7 @@ except ImportError:
         return resampled
 
 
-def sample_array_to_bytes(samples: SampleFormat) -> bytes:
+def sample_array_to_bytes(samples: Samples) -> bytes:
     """Return sample array as bytes."""
     return b"".join(struct.pack("<f", sample) for sample in samples)
 
